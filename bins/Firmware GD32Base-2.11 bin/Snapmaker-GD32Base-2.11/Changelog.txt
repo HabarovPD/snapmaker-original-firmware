@@ -1,0 +1,11 @@
+## Snapmaker-GD32Base-2.11 Changelog
+
+1. Workspace > Laser: power accepts setting of 0.1%. For the 1600mW laser module, a smaller power granularity can be used for focusing. For example, You can use 0.5% of 1600mW for focusing. This prevents the laser from burning the material when focusing.
+
+2. Optimized user experience of the V1.1 enclosure. After opening the door detection switch, weak light focusing can be used even when the door is opened.
+
+3. Bugfixes: deletes the .bin file when the upgrade is successful.
+
+4. Added support to Z-Axis Extension Module. When you attach the Z-Axis Extension Module to your printer, upgrade the firmware to this version. Reconnect Snapmakerjs to the printer. Enter "M1025 M1" in the console and press "Enter". When the software replies "ok", your printer is upgraded successfully. 
+
+When you want to use the original linear module, enter "M1025 M0" in the console and press "Enter". When the software replies "ok", your printer can only print items as tall as 125 mm. 

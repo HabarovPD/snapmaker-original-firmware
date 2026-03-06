@@ -1,0 +1,9 @@
+#ifndef _MACHINEDEFINE_H_
+#define _MACHINEDEFINE_H_
+
+#define	MACHINE_SNAPMAKER	1
+#define MACHINE_GAINT		2
+
+#define MACHINE_TYPE	MACHINE_SNAPMAKER
+
+#endif

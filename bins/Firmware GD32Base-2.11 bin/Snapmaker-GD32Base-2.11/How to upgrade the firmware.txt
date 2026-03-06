@@ -1,0 +1,22 @@
+Please follow this tutorial to upgrade the firmware: https://youtu.be/GCxzZwxJ_mU
+
+
+Or, follow these steps to upgrade the firmware:
+
+1. Copy the Update.Bin file to the provided USB Disk.
+2. Power off the printer and insert the USB Disk into the USB port.
+3. Power on the printer. If the LED changes as below, the upgrade is successful.
+   - The blue LED blinks slowly for about 5 seconds.
+   - The LED is then off for about 2 seconds.
+   - The LED starts to blink quickly.
+4. The upgrade process is completed.
+
+
+If the LED doesn't change as described, please follow these steps to troubleshoot:
+
+1. Make sure the file system of the USB Disk is FAT32.
+2. Make sure you copy the correct .Bin file (Update.Bin).
+3. Make sure the USB Disk is properly inserted into the USB port. If you are not sure, remove the USB Disk and insert it into the USB port again. The printer MUST be powered off when you remove and insert the USB Disk.
+4. Make sure the .Bin file is put in the root directory of the USB Disk. The controller cannot recognize the .Bin file if it is put in a folder.
+
+
