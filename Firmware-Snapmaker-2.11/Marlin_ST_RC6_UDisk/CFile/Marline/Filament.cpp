@@ -26,14 +26,14 @@
 
 #endif
 
-//差值缓存
+//Кэш различий
 int16_t delX, delY;
-//错误计数
+//количество ошибок
 static volatile uint8_t FaultCounter;
-//错误次数累计，测试
+//Совокупное количество ошибок, тест
 static uint16_t ErrorCount;
 
-//中断入口需要查看.S  文件
+//Для входа в прерывание необходимо просмотреть файл .S.
 const uint32_t PortTable[] = 
 {
 	(uint32_t)GPIOA,
@@ -56,9 +56,9 @@ const uint32_t PortRccTable[] =
 
 
 #define THIS_I2C	I2C2
-#define PAT9125_I2C_ADDR  0x75  //ID=LO
-//#define PAT9125_I2C_ADDR  0x73  //ID=HI
-//#define PAT9125_I2C_ADDR  0x79  //ID=NC
+#define PAT9125_I2C_ADDR  0x75  //ИД=ЛО
+//#define PAT9125_I2C_ADDR 0x73 //ID=HI
+//#define PAT9125_I2C_ADDR 0x79 //ID=NC
 
 #define PAT9125_XRES      0
 #define PAT9125_YRES      240
@@ -92,10 +92,10 @@ const uint32_t PortRccTable[] =
 #define CMD_READ	(uint8_t)((PAT9125_I2C_ADDR << 1) | 1)
 
 static const uint8_t PATInitRegs[][2] = {
-	{ 0x09, 0x5A },     //Disables write-protect.
-	{ 0x0D, 0xB5 },     //Sets X-axis resolution (necessary value here will depend on physical design and application).
-	{ 0x0E, 0xFF },     //Sets Y-axis resolution (necessary value here will depend on physical design and application).
-	{ 0x19, 0x04 },     //Sets 12-bit X/Y data format.
+	{ 0x09, 0x5A },     //Отключает защиту от записи.
+	{ 0x0D, 0xB5 },     //Устанавливает разрешение по оси X (необходимое значение здесь будет зависеть от физического исполнения и применения).
+	{ 0x0E, 0xFF },     //Устанавливает разрешение по оси Y (необходимое значение здесь будет зависеть от физического исполнения и применения).
+	{ 0x19, 0x04 },     //Устанавливает 12-битный формат данных X/Y.
 	//{ 0x4B, 0x04 },     //Needed for when using low-voltage rail (1.7-1.9V): Power saving configuration.
 };
 
@@ -243,9 +243,9 @@ static void I2CReadByte(U8 *pBuff, U8 Len)
 
 
 /********************************************
-PAT9125  写寄存器
-RegAddr:寄存器地址
-Value: 写入的值
+Регистр записи PAT9125
+RegAddr: адрес регистрации
+Значение: записанное значение
 ********************************************/
 void PAT9125WriteReg(uint8_t RegAddr, uint8_t Value)
 {
@@ -269,9 +269,9 @@ void PAT9125WriteReg(uint8_t RegAddr, uint8_t Value)
 }
 
 /********************************************
-PAT9125  写寄存器
-RegAddr:寄存器地址
-返回值:  寄存器内容
+Регистр записи PAT9125
+RegAddr: адрес регистрации
+Возвращаемое значение: содержимое регистра
 ********************************************/
 uint8_t PAT9125ReadReg(uint8_t RegAddr)
 {
@@ -302,8 +302,8 @@ uint8_t PAT9125ReadReg(uint8_t RegAddr)
 
 
 /********************************************
-PAT9125  检测是否存在
-返回值:  true  表示存在，false  表示不存在
+PAT9125 определяет, существует ли он
+Возвращаемое значение: true означает, что существует, false означает, что не существует.
 ********************************************/
 bool PAT9125CheckExisting(void)
 {
@@ -317,9 +317,9 @@ bool PAT9125CheckExisting(void)
 }
 
 /********************************************
-PAT9125 读取移动量
-X  :  16  位数据的指针
-Y  :  16  位数据的指针
+PAT9125 Чтение суммы перемещения
+X: указатель на 16-битные данные.
+Y: указатель на 16-битные данные.
 ********************************************/
 //static uint8_t tmpB;
 //static uint8_t tmpS;
@@ -335,15 +335,14 @@ bool PAT9125ReadDelta(int16_t *X, int16_t *Y)
 	//uint8_t Retry;
 	uint8_t ucMotion;
 
-	//Retry = 0;
-	//do
+	//Повторить = 0; делать
 	//{
 		ucMotion = PAT9125ReadReg(REG_MOTION_STATUS);
 		
 		pat9125_b = PAT9125ReadReg(REG_FRAME_AVG);
 		pat9125_s = PAT9125ReadReg(REG_SHUTTER);
 		//tmpU = ucMotion;
-		//if(ucMotion == 0xff)
+		//если (ucMotion == 0xff)
 		//	continue;
 
 		if((ucMotion & 0x80) && (pat9125_b != 0xff) && (pat9125_s != 0xff))
@@ -355,9 +354,9 @@ bool PAT9125ReadDelta(int16_t *X, int16_t *Y)
 			//tmpX = (((delxyhigh >> 4) << 8) | delxlow) & 0xfff;
 			tmpY = (((delxyhigh) << 8) | delylow) & 0xfff;
 			/*
-			if(tmpX & (1<<11))
+			если(tmpX & (1<<11))
 				*X = -(~((tmpX & 0x7ff) - 1));
-			else
+			еще
 				*X = tmpX & 0x7ff;
 			*/
 
@@ -387,9 +386,9 @@ bool PAT9125ReadDelta(int16_t *X, int16_t *Y)
 
 
 /********************************************
-PAT9125 设置分辨率
-XRes  :  X  分辨率
-YRes  :  Y  分辩率
+PAT9125 Установить разрешение
+XRes: разрешение X
+YRes: разрешение Y
 ********************************************/
 void PAT9125SetResolution(uint8_t XRes, uint8_t YRes)
 {
@@ -398,13 +397,13 @@ void PAT9125SetResolution(uint8_t XRes, uint8_t YRes)
 }
 
 /********************************************
-使能物料检测软件中断
+Включить прерывание программного обеспечения обнаружения материала
 ********************************************/
 void EnableFilamentCheck()
 {
 	return;
 	CRITICAL_SECTION_START;
-	//清除数据
+	//Очистить данные
 	PAT9125ReadDelta(&delX, &delY);
 	PAT9125ReadDelta(&delX, &delY);
 	PAT9125ReadDelta(&delX, &delY);
@@ -421,7 +420,7 @@ void EnableFilamentCheck()
 }
 
 /********************************************
-禁能物料检测软件中断
+Отключенное программное обеспечение для обнаружения материалов прервано
 ********************************************/
 void DisableFilamentCheck()
 {
@@ -431,7 +430,7 @@ void DisableFilamentCheck()
 }
 
 /********************************************
-读测试
+Тест на чтение
 ********************************************/
 long FilamentICReadTest(void)
 {
@@ -462,7 +461,7 @@ long FilamentICReadTest(void)
 
 
 /********************************************
-初始化物料检测
+Инициализация обнаружения материала
 ********************************************/
 void FilamentManagerInit()
 {	
@@ -489,7 +488,7 @@ void FilamentManagerInit()
 
 		//SysFaultFlag = FilamentICReadTest();
 
-		//存在传感器
+		//Датчик присутствия
 		if(PAT9125CheckExisting() == true)
 		{
 			for(int i=0;i<sizeof(PATInitRegs) / sizeof(PATInitRegs[0]);i++)
@@ -535,11 +534,11 @@ void FilamentManagerInit()
 }
 
 /********************************************
-逆初始化物料检测
+Обнаружение материала обратной инициализации
 ********************************************/
 void FilamentManagerDeinit()
 {
-	//EXTI->IMR = THIS_EXTI_LINE;
+	//OUTI->IMR = THIS_OUTI_LINE;
 	#if(HAVE_FALIMENT_SENSOR == 1)
 	DisableFilamentCheck();
 	#endif
@@ -555,7 +554,7 @@ void EXTI3_IRQHandler(void)
 	int Check_Unit;
 	int Tol_Unit;
 	
-	//读数成功
+	//Чтение успешное
 	if(PAT9125ReadDelta(&delX, &delY) == true)
 	{
 		Check_Unit = FILAMENT_CHECK_UNIT;
@@ -592,14 +591,13 @@ void EXTI3_IRQHandler(void)
 				FaultCounter--;
 		}
 	}
-	//读数失败
+	//Чтение не удалось
 	/*
-	else
+	еще
 	{
-		FaultCounter++;
-		if(FaultCounter >= FAULT_TIME)
+		Счетчик ошибок++; если (FaultCounter >= FAULT_TIME)
 		{
-			FaultCounter = 0;
+			Счетчик ошибок = 0;
 			PauseTriggle(FilamentFaultPause);
 		}
 	}

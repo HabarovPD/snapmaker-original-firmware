@@ -38,28 +38,28 @@ static const uint8_t BreathLedTable[] =
 
 #endif
 
-//检测指令缓冲是否为空
+//Проверьте, пуст ли буфер инструкций
 #define CMD_BUFF_EMPTY()	(GetCommandBuff()>0?false:true)
 static char tmpBuff[96];
 
-//暂停时的位置
+//Позиция во время паузы
 static float PausePosition[4];
-//停止打印类型
+//Остановить тип печати
 static StopPrintType StopType;
-//停止打印类型
+//Остановить тип печати
 static PausePrintType PauseType;
 
 
-//立即停止运行标置
+//Немедленно прекратите выполнение настройки
 static volatile bool SystemRequestStop;
-//打机印状态
+//Статус печати
 static PrinterStatus PrintingStatus;
-//上位机指定的模式
-//static WordMode ModeFromCommando;
+//Режим, указанный хост-компьютером
+//статический WordMode ModeFromCommando;
 
 
 /********************************************
-使能执行头断开检测
+Включить обнаружение отключения исполнительной головки
 ********************************************/
 void EnableExecuterCheck()
 {
@@ -70,7 +70,7 @@ void EnableExecuterCheck()
 }
 
 /********************************************
-禁能执行头断开检测
+Отключить выполнение обнаружения отключения головки
 ********************************************/
 void DisableExecuterCheck()
 {
@@ -80,7 +80,7 @@ void DisableExecuterCheck()
 
 
 /***********************************************
-待机状态 下处理G  代码
+Обработка G-кода в состоянии ожидания
 ***********************************************/
 void SystemIdleGcodeProcess(void)
 {
@@ -91,48 +91,48 @@ void SystemIdleGcodeProcess(void)
     SERIAL_ECHOLN(current_command);
   }
 
-  // Sanitize the current command:
-  //  - Skip leading spaces
-  //  - Bypass N[-0-9][0-9]*[ ]*
-  //  - Overwrite * with nul to mark the end
+  // Очистите текущую команду:
+  //  -Пропустить ведущие пробелы
+  //  -Обход N[-0-9][0-9]*[ ]*
+  //  -Замените *нулем, чтобы отметить конец
   while (*current_command == ' ') ++current_command;
   if (*current_command == 'N' && NUMERIC_SIGNED(current_command[1])) {
-    current_command += 2; // skip N[-0-9]
-    while (NUMERIC(*current_command)) ++current_command; // skip [0-9]*
-    while (*current_command == ' ') ++current_command; // skip [ ]*
+    current_command += 2; // пропустить N[-0-9]
+    while (NUMERIC(*current_command)) ++current_command; // пропустить [0-9]*
+    while (*current_command == ' ') ++current_command; // пропускать [ ]*
   }
-  char* starpos = strchr(current_command, '*');  // * should always be the last parameter
-  if (starpos) while (*starpos == ' ' || *starpos == '*') *starpos-- = '\0'; // nullify '*' and ' '
+  char* starpos = strchr(current_command, '*');  // *всегда должен быть последним параметром
+  if (starpos) while (*starpos == ' ' || *starpos == '*') *starpos-- = '\0'; // обнулить '*' и ' '
 
   char *cmd_ptr = current_command;
 
-  uint16_t codenum = 0; // define ahead of goto
+  uint16_t codenum = 0; // определить перед переходом
 
   bool code_is_good;
 
-  // Get the command code, which must be G, M, or T
+  // Получите код команды, который должен быть G, M или T.
   char command_code = *cmd_ptr++;
 
-  // Skip spaces to get the numeric part
+  // Пропускайте пробелы, чтобы получить числовую часть
   while (*cmd_ptr == ' ') cmd_ptr++;
 
-  // Bail early if there's no code
+  // Залог досрочно, если нет кода
   if(command_code == 'M')
   {
     code_is_good = NUMERIC(*cmd_ptr);
     if (!code_is_good) goto ExitUnknownCommand;
     
-    // Get and skip the code number
+    // Получить и пропустить кодовый номер
     do {
     codenum = (codenum * 10) + (*cmd_ptr - '0');
     cmd_ptr++;
     } while (NUMERIC(*cmd_ptr));
   }
 
-  // Skip all spaces to get to the first argument, or nul
+  // Пропустите все пробелы, чтобы перейти к первому аргументу или нулю.
   while (*cmd_ptr == ' ') cmd_ptr++;
 
-  // The command's arguments (if any) start here, for sure!
+  // Аргументы команды (если они есть) обязательно начинаются здесь!
   current_command_args = cmd_ptr;
 
   //KEEPALIVE_STATE(1);
@@ -141,17 +141,17 @@ void SystemIdleGcodeProcess(void)
   {
     switch(codenum)
 	{
-		//进入运行模式
+		//Войти в режим запуска
 		case 4000:
 			//ModeFromCommando = WORK_MODE_RUNNING;
 		break;
 
-		//进入待机模式
+		//Войти в режим ожидания
 		case 4001:
 			//ModeFromCommando = WORK_MODE_IDLE;
 		break;
 
-		//查询执行头状态
+		//Статус заголовка выполнения запроса
 		case 4002:
 			
 		break;
@@ -162,7 +162,7 @@ void SystemIdleGcodeProcess(void)
 
 ExitUnknownCommand:
 
-  // Still unknown command? Throw an error
+  // Все еще неизвестная команда? Выдать ошибку
   if (!code_is_good) unknown_command_error();
 
   ok_to_send();
@@ -171,10 +171,10 @@ ExitUnknownCommand:
 
 #if(SNAP_OLD_BASE == 0)
 /***********************************************
-待机处理线程
-检测执行头插入状态
-处理指定的一些Gcode
-根据执行头插入状态与上位机指定状态进行模式切换
+Поток резервной обработки
+Обнаружение статуса вставки заголовка выполнения
+Обработать некоторый указанный Gcode
+Переключение режима на основе состояния вставленной исполнительной головки и состояния, указанного хост-компьютером.
 ***********************************************/
 void SystemIdleProcess(void)
 {
@@ -182,7 +182,7 @@ void SystemIdleProcess(void)
 	millis_t CheckTick;
 	uint8_t EIOCheck[3];
 	LastMachineSelected = MA_UNDEFINED;
-	//关闭电源
+	//выключить питание
 	MainPowerOff();
 	StepperPowerOff();
 	CheckTick = millis();
@@ -191,7 +191,7 @@ void SystemIdleProcess(void)
 		EIOCheck[2] = EIOCheck[1];
 		EIOCheck[1] = EIOCheck[0];
 		EIOCheck[0] = 0;
-		//检测执行头插入
+		//Обнаружение вставки заголовка выполнения
 		if((E_ID_0_PORT->IDR & E_ID_0_PIN))
 			EIOCheck[0] |= 1;
 
@@ -199,7 +199,7 @@ void SystemIdleProcess(void)
 			EIOCheck[0] |= 2;
 
 
-		//消抖动
+		//отскакивать
 		if((EIOCheck[0] == EIOCheck[1]) && (EIOCheck[1] == EIOCheck[2]))
 		{
 			if(EIOCheck[0] != 0x3)
@@ -244,7 +244,7 @@ void SystemIdleProcess(void)
 
 			if((millis() - CheckTick) > (2 * TICK_PER_SECOND))
 			{
-				//无系统错误
+				//Никаких системных ошибок
 				if(!(SysFaultFlag & FAULT_FLAG_BED & FAULT_FLAG_HEATER0 & FAULT_FLAG_LOAD))
 					break;
 			}
@@ -256,12 +256,12 @@ void SystemIdleProcess(void)
 
 		LastMachineSelected = MachineSelected;
 		
-		//Gcode  处理
+		//Обработка G-кода
 		/*
 		get_serial_commands();
-		if (GetCommandBuff() > 0) 
+		если (GetCommandBuff() > 0) 
 		{
-			//Paladin
+			//Паладин
 			SystemIdleGcodeProcess();
 			DispatchComandIndex();
 			ShieldLedOn();
@@ -269,7 +269,7 @@ void SystemIdleProcess(void)
 		}
 		*/
 
-		//执行头已检测到并且上位机要求切换状态
+		//Обнаружена исполнительная головка, и главный компьютер требует переключения статуса.
 		/*
 		if((MachineSelected != MA_UNDEFINED) && (ModeFromCommando == WORK_MODE_RUNNING))
 		{
@@ -286,7 +286,7 @@ void SystemIdleProcess(void)
 uint8_t AndroidControlFlag;
 uint8_t PowerStat;
 /**************************************************
-安卓屏幕电源管理
+Управление питанием экрана Android
 ***************************************************/
 void AndroidScreenPowerManager()
 {
@@ -303,63 +303,63 @@ void AndroidScreenPowerManager()
 		DetIO[0] |= 2;
 	
 
-	//屏幕已接入
+	//Экран подключен.
 	if(!((DetIO[0] | DetIO[1] | DetIO[2]) & 1))
 	{
-		//之前是断开的
+		//Раньше он был отключен
 		if(!(PeriphPlugFlag & PERIPH_SCREEN_FLAG))
 		{
-			//重启屏幕
+			//Экран перезапуска
 			PowerStat = ANDROID_PWR_STAT_IDLE;
 			AndroidControlFlag = ANDROID_CTRL_RESET;
 			PeriphPlugFlag |= PERIPH_SCREEN_FLAG;
 		}
 	}
-	//屏幕断开
+	//Экран отключен
 	else if(DetIO[0] & DetIO[1] & DetIO[2] & 1)
 	{
-		//之前是连接的
+		//Раньше было подключено
 		if(PeriphPlugFlag & PERIPH_SCREEN_FLAG)
 		{
 			AndroidControlFlag = ANDROID_CTRL_POWEROFF;
-			//清除屏幕串口缓冲
+			//Очистить буфер последовательного порта экрана
 			HMI_BuffFlush();
-			//解除屏幕锁定
+			//Разблокировать экран
 			ScreenLock = false;
-			//机器正在打印中
+			//Машина печатает
 			if(GetCurrentPrinterStatus() != STAT_IDLE)
 			{
-				//触发停止
+				//триггерная остановка
 				StopTriggle(ManualStop);
 			}
 			PeriphPlugFlag &= ~PERIPH_SCREEN_FLAG;
 		}
 	}
 
-	//PC  未连接设备
+	//ПК не подключен к устройству
 	if(DetIO[0] & DetIO[1] & DetIO[2] & 2)
 	{
-		//之前PC  是连接状态
+		//Компьютер был подключен раньше
 		if(PeriphPlugFlag & PERIPH_PC_FLAG)
 		{
-			//串口切换到屏幕
+			//Переключить последовательный порт на экран
 			UART1_SELK1_PORT->BRR = UART1_SELK1_PIN;
 			PeriphPlugFlag &= ~PERIPH_PC_FLAG;
-			//机器正在打印中
+			//Машина печатает
 			if(GetCurrentPrinterStatus() != STAT_IDLE)
 			{
-				//触发停止
+				//триггерная остановка
 				StopTriggle(ManualStop);
 			}
 		}
 	}
-	//PC  已连接设备
+	//Устройство, подключенное к ПК
 	else if(!((DetIO[0] | DetIO[1] | DetIO[2]) & 2))
 	{
-		//之前PC  是断开状态
+		//Компьютер был отключен раньше
 		if(!(PeriphPlugFlag & PERIPH_PC_FLAG))
 		{
-			//屏幕未锁定且机器不在打印状态中
+			//Экран не заблокирован, и устройство не печатает
 			if((ScreenLock == false) && (GetCurrentPrinterStatus() == STAT_IDLE))
 				UART1_SELK1_PORT->BSRR = UART1_SELK1_PIN;
 			PeriphPlugFlag |= PERIPH_PC_FLAG;
@@ -369,51 +369,51 @@ void AndroidScreenPowerManager()
 	switch(PowerStat)
 	{
 		case ANDROID_PWR_STAT_IDLE:
-			//屏幕断开，关闭电源
+			//Экран отключен, питание выключено
 			if(AndroidControlFlag == ANDROID_CTRL_POWEROFF)
 			{
-				//拉高开机键
+				//Поднимите кнопку питания
 				ANDROID_START_PORT->BRR = ANDROID_START_PIN;
-				//关闭电源
+				//выключить питание
 				ANDROID_PWR_PORT->BRR = ANDROID_PWR_PIN;
 				AndroidControlFlag = ANDROID_CTRL_NONE;
-				//屏幕解索
+				//Декодирование экрана
 				ScreenLock = false;
 			}
-			//屏幕重新接入，复位屏幕
+			//Переподключите экран и перезагрузите экран
 			else if(AndroidControlFlag == ANDROID_CTRL_RESET)
 			{
-				//拉高开机键
+				//Поднимите кнопку питания
 				ANDROID_START_PORT->BRR = ANDROID_START_PIN;
-				//关闭电源
+				//выключить питание
 				ANDROID_PWR_PORT->BRR = ANDROID_PWR_PIN;
-				//切换状态
+				//Статус переключения
 				PowerStat = ANDROID_PWR_STAT_POWEROFF;
-				//清除标置
+				//четкая отметка
 				AndroidControlFlag = ANDROID_CTRL_NONE;
 				tmptick = millis();
 			}
 		break;
 
 		case ANDROID_PWR_STAT_POWEROFF:
-			//延时500  ms
+			//Задержка 500 мс
 			if((millis() - tmptick) > 300)
 			{
-				//开启电源
+				//Включите питание
 				ANDROID_PWR_PORT->BSRR = ANDROID_PWR_PIN;
-				//切换状态
+				//Статус переключения
 				PowerStat = ANDROID_PWR_STAT_POWERON;
 				tmptick = millis();
 			}
 		break;
 
 		case ANDROID_PWR_STAT_POWERON:
-			//延时3000 ms
+			//Задержка 3000 мс
 			if((millis() - tmptick) > 3000)
 			{
-				//拉低开机键
+				//Опустите кнопку питания
 				ANDROID_START_PORT->BSRR = ANDROID_START_PIN;
-				//切换状态
+				//Статус переключения
 				PowerStat = ANDROID_PWR_STAT_KEYDOWN;
 				tmptick = millis();
 			}
@@ -422,9 +422,9 @@ void AndroidScreenPowerManager()
 		case ANDROID_PWR_STAT_KEYDOWN:
 			if((millis() - tmptick) > 2000)
 			{
-				//切换状态
+				//Статус переключения
 				PowerStat = ANDROID_PWR_STAT_IDLE;
-				//拉高开机键
+				//Поднимите кнопку питания
 				ANDROID_START_PORT->BRR = ANDROID_START_PIN;
 			}
 		break;
@@ -434,11 +434,11 @@ void AndroidScreenPowerManager()
 
 #if(SNAP_OLD_BASE == 0)
 /**********************************************************
-系统电源控制
-Option  :   控制目标
-               POWER_OPTION_MainPower  :  执行头与热床电源
-               POWER_OPTION_StepperPower  :  步进电机电源
-Enable  :  true  打开 ，false  关闭
+Управление питанием системы
+Опция: контрольная цель
+               POWER_OPTION_MainPower: источник питания исполнительной головки и горячего стола.
+               POWER_OPTION_StepperPower: источник питания шагового двигателя.
+Включить: true для открытия, false для закрытия
 **********************************************************/
 void SystemPowerControl(PowerOption Option, bool Enable)
 {
@@ -462,7 +462,7 @@ void SystemPowerControl(PowerOption Option, bool Enable)
 #endif
 
 /******************************************
-查询当前是否正在终止打印
+Запросить, прекращена ли печать в данный момент
 *****************************************/
 bool IsStoppingPrint(void)
 {
@@ -470,8 +470,8 @@ bool IsStoppingPrint(void)
 }
 
 /******************************************
-查询当前打印机状态
-返回值:  STAT_IDLE
+Запрос текущего состояния принтера
+Возвращаемое значение: STAT_IDLE
                     STAT_PRINTG
                     STAT_PAUSE
 *****************************************/
@@ -481,8 +481,8 @@ PrinterStatus GetCurrentPrinterStatus(void)
 }
 
 /******************************************
-设置当前打印机状态
-NewStatus  :  STAT_IDLE
+Установить текущий статус принтера
+Новый статус: STAT_IDLE
                     STAT_PRINTG
                     STAT_PAUSE
 *****************************************/
@@ -493,8 +493,8 @@ void SetCurrentPrinterStatus(PrinterStatus NewStatus)
 
 
 /******************************************
-暂停打印触发
-Type:触发类型
+Приостановить печать триггера
+Тип: тип триггера
 *****************************************/
 void PauseTriggle(PausePrintType Type)
 {
@@ -504,19 +504,19 @@ void PauseTriggle(PausePrintType Type)
 	StableCounter[1] = pCounter_Y;
 	StableCounter[2] = pCounter_Z;
 	StableCounter[3] = pCounter_E;
-	//if(current_block == NULL)
+	//если (текущий_блок == NULL)
 	//	current_block = plan_get_current_block();
 	switch(Type)
 	{
 		case FilamentFaultPause:
 			CRITICAL_SECTION_START;
-			//U  盘打印
+			//Печать на USB-диске
 			if(GetCurrentPrinterStatus() == STAT_PRINTING)
 				card.sdprinting = false;
 			SystemRequestStop = true;
 			SysFaultFlag |= FAULT_FLAG_FILAMENT;
 			
-			//运动块已空
+			//Блок движения пуст
 			if(current_block != NULL)
 			{
 				PowerPanicData.FilePosition = current_block->FilePosition;
@@ -524,17 +524,17 @@ void PauseTriggle(PausePrintType Type)
 			}
 			else 
 			{
-				//存在下一个运动块
+				//Есть следующий блок движения
 				if(blocks_queued() == true)
 				{
-					//读取下一块行号
+					//Прочитайте следующий блок номеров строк
 					pBlock = &block_buffer[block_buffer_tail];
 					PowerPanicData.FilePosition = pBlock->FilePosition;
 				}
-				//不存在下一个块
+				//Нет следующего блока
 				else
 				{
-					//读取下一块行号
+					//Прочитайте следующий блок номеров строк
 					pBlock = &block_buffer[(block_buffer_tail + BLOCK_BUFFER_SIZE - 1) % BLOCK_BUFFER_SIZE];
 					PowerPanicData.FilePosition = pBlock->FilePosition;
 				}
@@ -551,13 +551,13 @@ void PauseTriggle(PausePrintType Type)
 		case ManualPause:
 		case ExecuterLostPause:
 			CRITICAL_SECTION_START;
-			//请求停止
+			//Просьба остановиться
 			SystemRequestStop = true;
-			//U  盘打印
+			//Печать на USB-диске
 			if(GetCurrentPrinterStatus() == STAT_PRINTING)
 				card.sdprinting = false;
 			
-			//运动块非空
+			//Блок движения не пуст
 			if(current_block != NULL)
 			{
 				PowerPanicData.FilePosition = current_block->FilePosition;
@@ -565,17 +565,17 @@ void PauseTriggle(PausePrintType Type)
 			}
 			else 
 			{
-				//存在下一个运动块
+				//Есть следующий блок движения
 				if(blocks_queued() == true)
 				{
-					//读取下一块行号
+					//Прочитайте следующий блок номеров строк
 					pBlock = &block_buffer[block_buffer_tail];
 					PowerPanicData.FilePosition = pBlock->FilePosition;
 				}
-				//不存在下一个块
+				//Нет следующего блока
 				else
 				{
-					//读取下一块行号
+					//Прочитайте следующий блок номеров строк
 					pBlock = &block_buffer[(block_buffer_tail + BLOCK_BUFFER_SIZE - 1) % BLOCK_BUFFER_SIZE];
 					PowerPanicData.FilePosition = pBlock->FilePosition;
 				}
@@ -590,11 +590,11 @@ void PauseTriggle(PausePrintType Type)
 		break;
 
 		case DoorOpenPause:
-			//在线打印
+			//Распечатать онлайн
 			if(GetCurrentPrinterStatus() == STAT_PRINTING)
 				card.sdprinting = false;
 			SystemRequestStop = true;
-			//运动块非空
+			//Блок движения не пуст
 			if(current_block != NULL)
 			{
 				PowerPanicData.FilePosition = current_block->FilePosition;
@@ -602,17 +602,17 @@ void PauseTriggle(PausePrintType Type)
 			}
 			else 
 			{
-				//存在下一个运动块
+				//Есть следующий блок движения
 				if(blocks_queued() == true)
 				{
-					//读取下一块行号
+					//Прочитайте следующий блок номеров строк
 					pBlock = &block_buffer[block_buffer_tail];
 					PowerPanicData.FilePosition = pBlock->FilePosition;
 				}
-				//不存在下一个块
+				//Нет следующего блока
 				else
 				{
-					//读取下一块行号
+					//Прочитайте следующий блок номеров строк
 					pBlock = &block_buffer[(block_buffer_tail + BLOCK_BUFFER_SIZE - 1) % BLOCK_BUFFER_SIZE];
 					PowerPanicData.FilePosition = pBlock->FilePosition;
 				}
@@ -628,8 +628,8 @@ void PauseTriggle(PausePrintType Type)
 }
 
 /******************************************
-继续打印触发
-Type:触发类型
+Продолжить печать триггера
+Тип: тип триггера
 *****************************************/
 void PauseResume(void)
 {
@@ -637,8 +637,8 @@ void PauseResume(void)
 }
 
 /******************************************
-停止打印触发
-Type:触发类型
+Остановить печать триггера
+Тип: тип триггера
 *****************************************/
 void StopTriggle(StopPrintType Type)
 {
@@ -647,7 +647,7 @@ void StopTriggle(StopPrintType Type)
 	StableCounter[1] = pCounter_Y;
 	StableCounter[2] = pCounter_Z;
 	StableCounter[3] = pCounter_E;
-	//if(current_block == NULL)
+	//если (текущий_блок == NULL)
 	//	current_block = plan_get_current_block();
 	switch(Type)
 	{
@@ -674,7 +674,7 @@ void StopTriggle(StopPrintType Type)
 		break;
 
 		case PowerPanicStop:
-			//中断触发，无需临界保护，在中断处理中已开启临界保护
+			//Запуск прерывания, критическая защита не требуется, критическая защита включена во время обработки прерывания
 			//CRITICAL_SECTION_START;
 			card.sdprinting = false;
 			SystemRequestStop = true;
@@ -701,7 +701,7 @@ void StopTriggle(StopPrintType Type)
 
 
 /****************************************************************
-暂停处理
+Приостановить обработку
 ****************************************************************/
 void PauseProcess(void)
 {
@@ -711,7 +711,7 @@ void PauseProcess(void)
 	{
 		if((PauseType == ManualPause) || (PauseType == FilamentFaultPause) || (PauseType == DoorOpenPause) || (PauseType == ExecuterLostPause))
 		{
-			//标置暂停状态
+			//Установить статус паузы
 			if(PrintingStatus == STAT_PRINTING_ONLINE)
 				PrintingStatus = STAT_PAUSE_ONLINE;
 			else
@@ -720,24 +720,24 @@ void PauseProcess(void)
 			block_buffer_head = block_buffer_tail = 0;
 			current_block = NULL;
 
-			//清除指令
+			//очистить команду
 			FlushCommand();
 
-			//保存温度
+			//температура хранения
 			for(int i=0;i<4;i++)		
 				PowerPanicData.HeaterTamp[i] = target_temperature[i];
 
-			//热床温度
+			//Температура нагревательного слоя
 			PowerPanicData.BedTamp = target_temperature_bed;
-			//风扇速度 
+			//скорость вентилятора 
 			//PowerPanicData.FanSpeed = TIM3->CCR1;
-			//机型保存
+			//Сохранение модели
 			PowerPanicData.MachineType = MachineSelected;
 
-			//标置有效
+			//Настройка действительна
 			PowerPanicData.Valid = 1;
 
-			//文件名
+			//имя файла
 			if(PowerPanicData.GCodeSource == GCODE_SOURCE_UDISK)
 			{
 				strcpy(PowerPanicData.FileName, card.currentselectfilename);
@@ -752,7 +752,7 @@ void PauseProcess(void)
 			current_position[Z_AXIS] = StableCounter[Z_AXIS] / axis_steps_per_unit[Z_AXIS];
 			current_position[E_AXIS] = StableCounter[E_AXIS] / axis_steps_per_unit[E_AXIS];
 
-			//Z  轴补偿
+			//Компенсация по оси Z
 			if(MA_PRINT == MachineSelected)
 			{
 				float delZ = mbl.get_z(current_position[X_AXIS], current_position[Y_AXIS]);
@@ -761,17 +761,17 @@ void PauseProcess(void)
 			
 			sync_plan_position();
 
-			//坐标
+			//координировать
 			for(int i=0;i<NUM_AXIS;i++)
 				PowerPanicData.PositionData[i] = current_position[i];
 
-			//清除请求停止标置，清除之后，电机才可重新运动
+			//Удалите запрос на остановку настройки. После очистки двигатель снова может двигаться.
 			SystemRequestStop = false;
 
-			//电流保持
+			//текущее удержание
 			StepperKeepCurrent = true;
 
-			//上报状态
+			//Статус отчета
 			#if(SNAP_OLD_BASE == 0)
 			if(PauseType == FilamentFaultPause)
 				HMI_SendMachineFaultFlag();
@@ -780,22 +780,22 @@ void PauseProcess(void)
 
 			if(MA_PRINT == MachineSelected)
 			{
-				//回抽
+				//Отзывать
 				if(current_temperature[0] > 180)
 				{
-					//切换到相对坐标模式
+					//Переключиться в режим относительных координат
 					relative_mode = true;
 					plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS] - 4, 40, active_extruder);
 					while(blocks_queued())manage_heater();
 					current_position[E_AXIS] -= 4;
 				}
 				
-				//切换到绝对坐标模式
+				//Переключиться в режим абсолютных координат
 				relative_mode = false;
 
 				if((HomeAfterReset[X_AXIS] == true) && (HomeAfterReset[Y_AXIS] == true) && (HomeAfterReset[Z_AXIS] == true))
 				{
-					//Z  轴抬升30  
+					//Подъем оси Z 30  
 					if((current_position[Z_AXIS] + 30) < (home_offset[Z_AXIS] + base_max_pos[Z_AXIS]))
 						sprintf(tmpBuff, "G0 Z%0.3f F2000", (current_position[Z_AXIS] + 30));
 					else
@@ -803,27 +803,27 @@ void PauseProcess(void)
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
 					while(blocks_queued())manage_heater();
-					//X  轴走到限位开关位置
+					//Ось X перемещается в положение концевого выключателя
 					sprintf(tmpBuff, "G0 X0 F2000");
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
 					while(blocks_queued())manage_heater();
-					//Y  轴走到最大位置
+					//Ось Y достигает максимального положения
 					sprintf(tmpBuff, "G0 Y%0.3f F2000", (home_offset[Y_AXIS] + base_max_pos[Y_AXIS]));
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
 					while(blocks_queued())manage_heater();
 				}
-				//切换到主界面
+				//Переключиться на основной интерфейс
 				HMI_ChangePage(PAGE_PRINT);
-				//关闭断料检测
+				//Отключить обнаружение разрыва материала
 				#if(HAVE_FALIMENT_SENSOR == 1)
 				DisableFilamentCheck();
 				#endif
 			}
 			else if(MA_CNC == MachineSelected)
 			{			
-				//Z  轴抬升30  
+				//Подъем оси Z 30  
 				if((current_position[Z_AXIS] + 30) < (home_offset[Z_AXIS] + base_max_pos[Z_AXIS]))
 					sprintf(tmpBuff, "G0 Z%0.3f", (current_position[Z_AXIS] + 30));
 				else
@@ -832,70 +832,70 @@ void PauseProcess(void)
 				gcode_G0_G1(0);
 				while(blocks_queued())manage_heater();
 
-				//走到工件原点
+				//Переход к началу координат заготовки
 				strcpy(tmpBuff, "G0 X0 Y0 F3000");
 				current_command_args = tmpBuff;
 				gcode_G0_G1(0);
 				while(blocks_queued())manage_heater();
 
-				//关闭电机
+				//Выключите двигатель
 				digitalWrite(LASER_PORT, LASER_PIN, LOW);
-				//切换到主界面
+				//Переключиться на основной интерфейс
 				HMI_ChangePage(PAGE_CNC);
 			}
-			//激光
+			//лазер
 			else
 			{
-				//切换到主界面
+				//Переключиться на основной интерфейс
 				HMI_ChangePage(PAGE_LASER);
-				//启动检测
+				//Начать обнаружение
 				EnableDoorCheck();
 			}
 
-			//回应上位机
+			//Ответ главному компьютеру
 			#if(SNAP_OLD_BASE != 1)
 			if((HmiRequestStatus == STAT_PAUSE) || (HmiRequestStatus == STAT_PAUSE_ONLINE))
 			{
 				HMI_SendMachineStatusChange(0x04, 0);
 			}
 			#endif
-			//清除标志
+			//очистить флаг
 			HmiRequestStatus = STAT_IDLE;
 			
-			//清除标置
+			//четкая отметка
 			PauseType = NonePause;
 		}
 	}
 	else if((PrintingStatus == STAT_PAUSE) || (PrintingStatus == STAT_PAUSE_ONLINE))
 	{
-		//继续打印
+		//Продолжить печать
 		if(PauseType == ContinuePrint)
 		{
-			//U  盘打印
+			//Печать на USB-диске
 			if(PrintingStatus == STAT_PAUSE)
 			{
-				//文件位置跳转
+				//Переход к местоположению файла
 				if(card.FileSeek(PowerPanicData.FilePosition) == false)
 				{
 					card.initsd();
-					//尝试打开文件
+					//попробуй открыть файл
 				  	card.openFile(PowerPanicData.FileName, true);
 					card.FileSeek(PowerPanicData.FilePosition);
 				}
 				
-				//继续 读取文件
+				//Продолжить чтение файла
 				card.sdprinting = true;
 			}
 			
-			//恢复运动
+			//Вернуться в спорт
 			SystemRequestStop = false;
 
 			if(MA_PRINT == MachineSelected)
 			{			
-				//预挤出
+				//Предварительная экструзия
 				if(current_temperature[0] > 175)
 				{
-					//相对位置模式
+					//Режим относительного положения
 					relative_mode = true;
 					strcpy(tmpBuff, "G0 E15 F800");
 					current_command_args = tmpBuff;
@@ -908,15 +908,15 @@ void PauseProcess(void)
 					relative_mode = false;
 				}
 
-				//E  轴同步位置
+				//Положение синхронизации оси E
 				current_position[E_AXIS] = PowerPanicData.PositionData[E_AXIS];
 				//set_destination_to_current();
 				sync_plan_position();
 
-				//绝对位置模式
+				//Режим абсолютного положения
 				relative_mode = false;
 				
-				//移动到恢复点
+				//Перейти к точке восстановления
 				sprintf(tmpBuff, "G0 X%0.2f Y%0.2f F4000", PowerPanicData.PositionData[X_AXIS], PowerPanicData.PositionData[Y_AXIS]);
 				current_command_args = tmpBuff;
 				gcode_G0_G1(0);
@@ -927,22 +927,22 @@ void PauseProcess(void)
 				gcode_G0_G1(0);
 				while(blocks_queued())manage_heater();
 
-				//切换到主界面
+				//Переключиться на основной интерфейс
 				HMI_ChangePage(PAGE_PRINT);
-				//开启断料检测
+				//Включить обнаружение разрыва материала
 				#if(HAVE_FALIMENT_SENSOR == 1)
 				EnableFilamentCheck();
 				#endif
 			}
 			else if(MA_CNC == MachineSelected)
 			{
-				//打开电机
+				//Включите двигатель
 				digitalWrite(LASER_PORT, LASER_PIN, HIGH);
-				//延时
+				//задерживать
 				tmpmills = millis() + 500;
 				while(millis() < tmpmills);
 
-				//移动到恢复点
+				//Перейти к точке восстановления
 				sprintf(tmpBuff, "G0 X%0.2f Y%0.2f F4000", PowerPanicData.PositionData[X_AXIS], PowerPanicData.PositionData[Y_AXIS]);
 				current_command_args = tmpBuff;
 				gcode_G0_G1(0);
@@ -953,25 +953,25 @@ void PauseProcess(void)
 				gcode_G0_G1(0);
 				while(blocks_queued())manage_heater();
 				
-				//切换到主界面
+				//Переключиться на основной интерфейс
 				HMI_ChangePage(PAGE_CNC);
 			}
 			else if((MA_LASER == MachineSelected) || (MA_LASER_350 == MachineSelected))
 			{
-				//切换到主界面
+				//Переключиться на основной интерфейс
 				HMI_ChangePage(PAGE_LASER);
 			}
 
-			//速度还原
+			//Скорость восстановления
 			SetG0FeedRate(PowerPanicData.TravelFeedRate);
 			SetG1FeedRate(PowerPanicData.PrintFeedRate);
 
-			//清空缓冲
+			//Очистить буфер
 			FlushCommand();
-			//切换到绝对坐标模式
+			//Переключиться в режим абсолютных координат
 			relative_mode = false;
 			while(blocks_queued())manage_heater();
-			//标置打印中状态
+			//Отметить статус печати
 			if(PrintingStatus == STAT_PAUSE)
 				PrintingStatus = STAT_PRINTING;
 			else
@@ -984,11 +984,11 @@ void PauseProcess(void)
 			#if(HAVE_FALIMENT_SENSOR == 1)
 			EnableFilamentCheck();
 			#endif
-			//启动检测
+			//Начать обнаружение
 			if(MA_LASER == MachineSelected)
 				EnableDoorCheck();
 
-			//清除标置
+			//четкая отметка
 			PauseType = NonePause;
 		}
 	}
@@ -997,11 +997,11 @@ void PauseProcess(void)
 
 
 /******************************************
-结束打印处理
-3  种情况
-1】打印完毕，需要把物料向外推送
-2】脱机打印时，点击停止打印
-3】系统掉电
+Завершить обработку печати
+3 ситуации
+1] После печати материалы необходимо вытолкнуть.
+2] При печати в автономном режиме нажмите, чтобы остановить печать.
+3】Отключение питания системы
 *****************************************/
 void FinishPrintProcess()
 {
@@ -1010,13 +1010,13 @@ void FinishPrintProcess()
 	switch(StopSteps)
 	{
 		case 0:
-			//断电
+			//отключение электроэнергии
 			if(StopType == PowerPanicStop)
 			{
-				//打印状态下
+				//В состоянии печати
 				if((PrintingStatus == STAT_PRINTING) || (PrintingStatus == STAT_PRINTING_ONLINE))
 				{
-					//保存温度
+					//температура хранения
 					for(int i=0;i<4;i++)
 					{
 						PowerPanicData.HeaterTamp[i] = target_temperature[i];
@@ -1025,17 +1025,17 @@ void FinishPrintProcess()
 					PowerPanicData.BedTamp = target_temperature_bed;
 					target_temperature_bed = 0;
 
-					//风扇速度 
+					//скорость вентилятора 
 					//PowerPanicData.FanSpeed = TIM3->CCR1;
-					//机型保存
+					//Сохранение модели
 					PowerPanicData.MachineType = MachineSelected;
 
-					//标置有效
+					//Настройка действительна
 					PowerPanicData.Valid = 1;
 
-					//文件名
+					//имя файла
 					strcpy(PowerPanicData.FileName, card.currentselectfilename);
-					//打印时间
+					//Время печати
 					PowerPanicData.accumulator = print_job_timer.duration();
 					
 					
@@ -1044,7 +1044,7 @@ void FinishPrintProcess()
 					current_position[Z_AXIS] = StableCounter[Z_AXIS] / axis_steps_per_unit[Z_AXIS];
 					current_position[E_AXIS] = StableCounter[E_AXIS] / axis_steps_per_unit[E_AXIS];
 
-					//Z  轴补偿
+					//Компенсация по оси Z
 					float delZ = mbl.get_z(current_position[X_AXIS], current_position[Y_AXIS]);
 					current_position[Z_AXIS] -= delZ;
 
@@ -1053,41 +1053,41 @@ void FinishPrintProcess()
 					
 					sync_plan_position();
 
-					//坐标
+					//координировать
 					for(int i=0;i<NUM_AXIS;i++)
 						PowerPanicData.PositionData[i] = current_position[i];
 
-					//保存数据
+					//сохранить данные
 					SaveBreakPointData();
 
-					//清除请求停止标置，清除之后，电机才可重新运动
+					//Удалите запрос на остановку настройки. После очистки двигатель снова может двигаться.
 					SystemRequestStop = false;
 
-					//回抽
+					//Отзывать
 					if(MA_PRINT == MachineSelected)
 					{
 						plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS] - 1, 40, active_extruder);
 						while(blocks_queued())manage_heater();
 
-						//抬升Z  轴
+						//Поднять ось Z
 						plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + 5, current_position[E_AXIS] - 1, 40, active_extruder);
 						while(blocks_queued())manage_heater();
 					}
 				}
 				while(1);
 			}
-			//打印完成
+			//Печать завершена
 			else if(StopType == EndPrint)
 			{
 				HMI_ChangePage(PAGE_PROCESSING);
 				StopSteps = 1;
 				nextcheckMill = millis() + 1000;
 				card.LastPercent = 100;
-				//关闭门检测
+				//Обнаружение закрытой двери
 				if(isLaserMachine(MachineSelected) == 1)
 					DisableDoorCheck();
 			}
-			//屏幕终止打印
+			//Экран прекращает печать
 			else if(StopType == ManualStop)
 			{
 				StopSteps = 1;
@@ -1098,7 +1098,7 @@ void FinishPrintProcess()
 				current_position[Y_AXIS] = StableCounter[Y_AXIS] / axis_steps_per_unit[Y_AXIS];
 				current_position[Z_AXIS] = StableCounter[Z_AXIS] / axis_steps_per_unit[Z_AXIS];
 				sync_plan_position();
-				//关闭门检测
+				//Обнаружение закрытой двери
 				if(isLaserMachine(MachineSelected) == 1)
 					DisableDoorCheck();
 			}
@@ -1124,7 +1124,7 @@ void FinishPrintProcess()
 			}
 			
 			StopSteps = 3;
-			//禁能断电检测
+			//Отключено обнаружение отключения электроэнергии
 			DisablePowerPanicCheck();
 			#if(SNAP_OLD_BASE == 1)
 			if(isLaserMachine(MachineSelected) == 1)
@@ -1133,17 +1133,17 @@ void FinishPrintProcess()
 		break;
 		
 		case 3:
-			//绝对坐标模式
+			//Режим абсолютных координат
 			relative_mode = false;
-			//清除请求停止标置，清除之后，电机才可重新运动
+			//Удалите запрос на остановку настройки. После очистки двигатель снова может двигаться.
 			SystemRequestStop = false;
 			block_buffer_head = block_buffer_tail = 0;
 			current_block = NULL;
-			//切换到主界面
+			//Переключиться на основной интерфейс
 			if(MachineSelected == MA_PRINT)
 			{
 				disable_all_heaters();
-				//Z  升到最高
+				//Z поднимается до самого высокого уровня
 				if((HomeAfterReset[0] == true) && (HomeAfterReset[1] == true) && (HomeAfterReset[2] == true))
 				{
 					float Zpos;
@@ -1162,17 +1162,17 @@ void FinishPrintProcess()
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
 					while(blocks_queued())manage_heater();
-					//X  Y  回原点
+					//X Y раз начало
 					strcpy(tmpBuff, "G28 Y");
 					current_command_args = tmpBuff;
 					gcode_G28();
 					#else
-					//X  Y  回原点
+					//X Y раз начало
 					strcpy(tmpBuff, "G28 X Y");
 					current_command_args = tmpBuff;
 					gcode_G28();
 					while(blocks_queued())manage_heater();
-					//Y  走到最大位置
+					//Y Перейти в максимальное положение
 					sprintf(tmpBuff, "G0 Y%0.2f F2000", base_max_pos[Y_AXIS] + home_offset[Y_AXIS] - 20);
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
@@ -1191,7 +1191,7 @@ void FinishPrintProcess()
 					gcode_G0_G1(0);
 					while(blocks_queued())manage_heater();
 					Config_RetrieveSettings();
-                    //清除Block的PWM数据
+                    //Очистить данные блока ШИМ
                     for(int i=0;i<BLOCK_BUFFER_SIZE;i++)
                         block_buffer[i].LaserPwm = 0;
 				}
@@ -1206,15 +1206,15 @@ void FinishPrintProcess()
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
 					while(blocks_queued())manage_heater();
-					//关闭主轴
+					//Выключите шпиндель
 					digitalWrite(LASER_PORT, LASER_PIN, 0);
 				}
 				HMI_ChangePage(PAGE_CNC);
 			}
 			StopSteps = 0;
-			//标置待机状态
+			//Отметить состояние ожидания
 			PrintingStatus = STAT_IDLE;
-			//清除标置
+			//четкая отметка
 			StopType = NoneStop;
 			
 		break;
@@ -1222,23 +1222,23 @@ void FinishPrintProcess()
 }
 
 /********************************************
-系统自检
+Самотестирование системы
 ********************************************/
 void SystemSelfCheck(void)
 {
 	#if(0)
 	#if(SNAP_OLD_BASE == 0)
 	uint32_t tick;
-	//总开关Mos  检测
-	//总电开关关闭
+	//Главный выключатель обнаружения Mos
+	//Главный выключатель питания выключен
 	MainPowerOff();
 
-	//下端MOS  打开
+	//Нижний конец MOS открыт
 	HEATER_0_PORT->BSRR = HEATER_0_PIN;
 	HEATER_BED_PORT->BSRR = HEATER_BED_PIN;
 	tick = millis() + 100;
 	while(tick > millis());
-	//测到导通
+	//Обнаружена непрерывность
 	if((!(HEATER0_DET_PORT->IDR & HEATER0_DET_PIN)) && (!(HEATBED_DET_PORT->IDR & HEATBED_DET_PIN)))
 	{
 		SysFaultFlag |= FAULT_FLAG_LOAD;
@@ -1247,15 +1247,15 @@ void SystemSelfCheck(void)
 		return;
 	}
 
-	//加热头MOS  检测
-	//总电开关打开
+	//МОП-обнаружение нагревательной головки
+	//Главный выключатель включен
 	MainPowerOn();
-	//下端MOS  关闭
+	//Нижний конец MOS закрыт
 	HEATER_0_PORT->BRR = HEATER_0_PIN;
 	HEATER_BED_PORT->BRR = HEATER_BED_PIN;
 	tick = millis() + 100;
 	while(tick > millis());
-	//测到导通
+	//Обнаружена непрерывность
 	if(!(HEATER0_DET_PORT->IDR & HEATER0_DET_PIN))
 	{
 		SysFaultFlag |= FAULT_FLAG_HEATER0;
@@ -1274,7 +1274,7 @@ void SystemSelfCheck(void)
 		return;
 	}
 
-	//开启下端Mos
+	//Включите нижний предел МО
 	HEATER_0_PORT->BSRR = HEATER_0_PIN;
 	HEATER_BED_PORT->BSRR = HEATER_BED_PIN;
 	tick = millis() + 100;
@@ -1307,7 +1307,7 @@ void SystemSelfCheck(void)
 
 
 /********************************************
-系统统一初始化
+Единая инициализация системы
 ********************************************/
 void SystemGpioInit(void)
 {
@@ -1316,7 +1316,7 @@ void SystemGpioInit(void)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_AFIO, ENABLE);
 	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);
 
-	//En,Dir,Step
+	//Скажем, шаг
 #ifdef X_ENABLE_PIN
 	X_ENABLE_WRITE(1);
 #endif
@@ -1356,7 +1356,7 @@ void SystemGpioInit(void)
 	GPIO_Init(HEATER_BED_PORT, &GPIO_InitStruct);
 #endif
 
-	//LED
+	//Вел
 #ifdef LED_R_PORT
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStruct.GPIO_Pin = LED_R_PIN;
@@ -1369,9 +1369,9 @@ void SystemGpioInit(void)
 	GPIO_Init(LED_B_PORT, &GPIO_InitStruct);
 #endif
 
-//风扇
+//вентилятор
 /*
-风扇1  可能需要调速
+Вентилятору 1 может потребоваться регулировка скорости.
 #ifdef H_FAN1_PORT
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStruct.GPIO_Pin = H_FAN1_PIN;
@@ -1384,7 +1384,7 @@ void SystemGpioInit(void)
 	GPIO_InitStruct.GPIO_Pin = H_FAN2_PIN;
 	GPIO_Init(H_FAN2_PORT, &GPIO_InitStruct);
 #endif
-	//步进电机
+	//шаговый двигатель
 #ifdef X_STEP_PIN
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStruct.GPIO_Pin = X_STEP_PIN;
@@ -1477,7 +1477,7 @@ void SystemGpioInit(void)
 #endif
 
 	E0_DIR_WRITE(0);
-//老主控在此初始化
+//Здесь инициализируется старый мастер
 #if(SNAP_OLD_BASE == 1)
 #ifdef E0_STEP_PORT
 	GPIO_InitStruct.GPIO_Pin = E0_STEP_PIN;
@@ -1514,7 +1514,7 @@ void SystemGpioInit(void)
 #endif
 
 
-	//限位开关
+	//концевой выключатель
 	GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
 #if(SNAP_OLD_BASE == 1)
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IPU;
@@ -1640,7 +1640,7 @@ void SystemGpioInit(void)
 	tmptick = millis() + 10;
 	while(tmptick > millis());
 
-//执行头断开检测
+//Выполнить обнаружение поломки головы
 #if(SNAP_OLD_BASE == 0)
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_InitStruct.GPIO_Pin = E_ID_0_PIN;
@@ -1670,7 +1670,7 @@ void SystemGpioInit(void)
 
 	DisableExecuterCheck();
 
-	//呼吸灯
+	//дышащий свет
 	DAC_InitTypeDef DAC_InitStruct;
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	DMA_InitTypeDef DMA_InitStruct;
@@ -1718,7 +1718,7 @@ void SystemGpioInit(void)
 	SystemPowerControl(POWER_OPTION_MainPower, true);
 	#endif
 
-    //电机上电
+    //Питание двигателя включено
     enable_x();
     enable_y();
     enable_z();
@@ -1732,7 +1732,7 @@ void EXTI15_10_IRQHandler(void)
 {
 	EXTI->PR = EXTI_Line14 | EXTI_Line15;
 	PauseTriggle(ExecuterLostPause);
-	//关闭检测
+	//Отключить обнаружение
 	DisableExecuterCheck();
 }
 }

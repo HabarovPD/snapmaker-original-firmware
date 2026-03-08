@@ -45,7 +45,7 @@ extern bool relative_mode;
 
 static strPowerPanicSave tmpPowerPanicData;
 
-//下个写入数据索引 Следующая запись индекса данных
+//Следующая запись индекса данных Следующая запись индекса данных
 uint32_t WriteIndex;
 
 const uint32_t PortTable[] = 
@@ -166,16 +166,16 @@ void SaveBreakPointData(void)
 	uint32_t u32data;
 	uint8_t *pBuff;
 	
-	//记录大小 Размер записи
+	//Размер записи
 	RecordSize = (sizeof(strPowerPanicSave) + 8);
 
-	//写一半标识 Напишите половину балла
+	//Напишите половину письма
 	addr = (WriteIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 	u32data = 0x5555;
 	FLASH_Unlock();
 	FLASH_ProgramWord(addr, u32data);
 
-	//地址 адрес
+	//Адрес адрес
 	addr = (WriteIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + 8 + FLASH_POWERPANIC_ADDR;
 	
 	pBuff = (uint8_t*)&PowerPanicData;
@@ -193,7 +193,7 @@ void SaveBreakPointData(void)
 		addr = addr + 4;
 	}
 
-	//写完整标识 Напишите полный идентификатор.
+	//Копировать полный идентификатор. Записать полный идентификатор.
 	addr = (WriteIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR + 4;
 	u32data = 0x5555;
 	FLASH_ProgramHalfWord(addr, u32data);
@@ -210,9 +210,9 @@ void MaskBreadkPointData(void)
 	uint32_t addr;
 	uint16_t preIndex;
 	
-	//记录大小 Размер записи
+	//Размер записи
 	RecordSize = (sizeof(strPowerPanicSave) + 8);
-	//记录总空间
+	//Запишите общее пространство
 	TotalCount = RECORD_COUNT_PER_PAGE * FLASH_RECORD_PAGES;
 	
 	preIndex = (WriteIndex + TotalCount - 1) % sizeof(TotalCount);
@@ -225,22 +225,22 @@ void MaskBreadkPointData(void)
 }
 
 /********************************************
-读取断电数据
-采用循环保存法
-第1  个字节保存标置
-Flag:0x0000表示数据已读取并清空
-       0x5555表示有效数据
-       0xFFFF表示为空(  可写)
-查找原理:  从头开始查找空块，然后从空块返回查找无效块或有效块，即最后一个非空块
+Чтение данных об отключении электроэнергии
+Используйте метод сохранения цикла
+Первый байт содержит настройку
+Флаг: 0x0000 указывает, что данные были прочитаны и очищены.
+       0x5555 указывает на действительные данные.
+       0xFFFF означает пустой (доступный для записи)
+Принцип поиска: начните с начала, чтобы найти пустой блок, а затем вернитесь из пустого блока, чтобы найти недействительный блок или действительный блок, то есть последний непустой блок.
 
 Чтение данных после отключения питания
 Использование циклического метода сохранения
 Первый байт хранит флаг
-Флаг: 0x0000 указывает на то, что данные были прочитаны и очищены
+Флаг: 0x0000 указывает на то, что данные были прочитаны и очищены.
 0x5555 указывает на допустимые данные
-0xFFFF указывает на нулевой (доступен для записи)
-Принцип поиска: Начинаем поиск пустых блоков с начала,
-	затем возвращаемся от пустых блоков для поиска недопустимых
+0xFFFF указывает на нулевой (доступен для записей)
+Принцип поиска: Начинаем поиск пустых блоков с самого начала,
+	затем возвращаемся из пустых блоков для замены недопустимых
 	или допустимых блоков, т.е. последнего непустого блока.
 ********************************************/
 void LoadBreakPointData(void)
@@ -253,7 +253,7 @@ void LoadBreakPointData(void)
 	uint32_t TotalCount;
 	uint32_t Flag;
 
-	//记录大小 Размер записи
+	//Размер записи
 	RecordSize = (sizeof(strPowerPanicSave) + 8);
 	//记录总空间 Общее пространство для записей
 	TotalCount = RECORD_COUNT_PER_PAGE * FLASH_RECORD_PAGES;
@@ -271,7 +271,7 @@ void LoadBreakPointData(void)
 		}
 	}
 
-	//查找最后一个非空块 Найдите последний непустой блок
+	//Найти последний непустой блок. Найти последний непустой блок.
 	for(i=0;i<TotalCount;i++)
 	{
 		//计算地址 Рассчитать адрес
@@ -284,27 +284,27 @@ void LoadBreakPointData(void)
 		tmpIndex = (tmpIndex + TotalCount - 1) % TotalCount;
 	}
 
-	//读取标置位
+	//чтение набора флагов
 	Flag = *((uint32_t*)addr);
-	//Flash  是空的，表示没有记录
+	//Flash пуст, что указывает на отсутствие записи.
 	if(Flag == 0xffffffff)
 	{
-		//当前位置作为写入位置
+		//Текущее местоположение в качестве места записи
 		WriteIndex = 0;
-		//标置无效
+		//Неверная настройка
 		PowerPanicData.Valid = 0;
 	}
 	else
 	{
-		//地址
+		//адрес
 		addr = (tmpIndex / RECORD_COUNT_PER_PAGE) * 2048 + (tmpIndex % RECORD_COUNT_PER_PAGE) * RecordSize + 8 + FLASH_POWERPANIC_ADDR;
-		//读取数据 
+		//Чтение данных 
 		pSrcBuff = (uint8_t*)addr;
 		pDstBuff = (uint8_t*)&PowerPanicData;
 		for(int i=0;i<sizeof(strPowerPanicSave);i++)
 			*pDstBuff++ = *pSrcBuff++;
 
-		//校验
+		//проверять
 		uint32_t Checksum;
 		uint32_t tmpChecksum;
 		tmpChecksum = PowerPanicData.CheckSum;
@@ -329,22 +329,22 @@ void LoadBreakPointData(void)
 
 		#endif
 
-		//校验失败
+		//Проверка не удалась
 		#if(1)
 		if(Checksum != tmpChecksum)
 		{
-			//清除标志
+			//очистить флаг
 			FLASH_Unlock();
 			addr = (tmpIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 			FLASH_ProgramWord(addr, 0);
 			FLASH_Lock();
-			//标置无效
+			//Неверная настройка
 			PowerPanicData.Valid = 0;
 		}
-		//校验成功
+		//Проверка прошла успешно
 		else
 		{
-			//标置有效
+			//Настройка действительна
 			PowerPanicData.Valid = 1;
 		}
 		#endif
@@ -352,12 +352,12 @@ void LoadBreakPointData(void)
 		if(Flag != 0x5555)
 			PowerPanicData.Valid = 0;
 		
-		//下一个位置作为写入位置
+		//Следующая позиция в качестве позиции письма
 		WriteIndex = (tmpIndex + 1) % TotalCount;
-		//首地址
+		//Первый адрес
 		if((WriteIndex % RECORD_COUNT_PER_PAGE) == 0)
 		{
-			//控除FLASH
+			//дедукционная вспышка
 			FLASH_Unlock();
 			addr = (tmpIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 			FLASH_ErasePage(addr);
@@ -367,31 +367,31 @@ void LoadBreakPointData(void)
 }
 
 /********************************************
-断后续打
-Err  :  指向错误标置
-         1  表示保存的数据不可用
-         2  表示文件打开失败
-返回值:  true 为正常开启，false  为启动失败，失败原因可查Err  的值
+Остановись и снова сражайся
+Err: указывает на метку ошибки.
+         1 означает, что сохраненные данные недоступны
+         2 означает, что открытие файла не удалось
+Возвращаемое значение: true означает нормальный запуск, false означает сбой при запуске, причину сбоя можно проверить по значению Err.
 ********************************************/
 bool PowerPanicResumeWork(uint8_t *Err)
 {
 	char tmpBuff[32];
 	
 
-	//暂存文件位置，运动会更新PowerPanicData  中的数据
+	//Временное расположение файла, при перемещении обновятся данные в PowerPanicData.
 	tmpPowerPanicData = PowerPanicData;
 
-	//数据有效
+	//Данные действительны
 	if(tmpPowerPanicData.Valid != 0)
 	{
 		card.initsd();
-	  	//尝试打开文件
+	  	//попробуй открыть файл
 	  	card.openFile(PowerPanicData.FileName, true);
 		
-		//文件成功打开
+		//Файл успешно открыт
 		if(card.isFileOpen() == true)
 		{
-			//加热
+			//обогрев
 			if(tmpPowerPanicData.BedTamp > 20)
 			{
 				sprintf(tmpBuff, "M140 S%0.2f", tmpPowerPanicData.BedTamp);
@@ -399,17 +399,17 @@ bool PowerPanicResumeWork(uint8_t *Err)
 				gcode_M140();
 			}
 
-			//目前只考虑加热头1
+			//В настоящее время рассматривается только нагревательная головка 1.
 			sprintf(tmpBuff, "M104 S%0.2f", tmpPowerPanicData.HeaterTamp[0]);
 			current_command_args = tmpBuff;
 			gcode_M104();
 			
-			//X  Y  回原点
+			//X Y раз начало
 			strcpy(tmpBuff, "G28");
 			current_command_args = tmpBuff;
 			gcode_G28();
 			
-			//等待加热
+			//В ожидании отопления
 			if(tmpPowerPanicData.BedTamp > 20)
 			{
 				sprintf(tmpBuff, "M190 S%0.2f", tmpPowerPanicData.BedTamp);
@@ -417,30 +417,30 @@ bool PowerPanicResumeWork(uint8_t *Err)
 				gcode_M190();
 			}
 
-			//目前只考虑加热头1
+			//В настоящее время рассматривается только нагревательная головка 1.
 			sprintf(tmpBuff, "M109 S%0.2f", tmpPowerPanicData.HeaterTamp[0]);
 			current_command_args = tmpBuff;
 			gcode_M109();
 
-			//预挤出 
-			//相对模式
+			//Предварительная экструзия 
+			//Относительный режим
 			relative_mode = true;
 			strcpy(tmpBuff, "G0 E25 F200");
 			current_command_args = tmpBuff;
 			gcode_G0_G1(0);
 			st_synchronize();
 
-			//绝对模式
+			//Абсолютный режим
 			relative_mode = false;
 
-			//坐标更新
+			//Обновление координат
 			current_position[E_AXIS] = tmpPowerPanicData.PositionData[E_AXIS];
-			//current_position[Z_AXIS] = tmpPowerPanicData.PositionData[Z_AXIS];
+			//текущая_позиция[Z_AXIS] = tmpPowerPanicData.PositionData[Z_AXIS];
 			set_destination_to_current();
 			sync_plan_position();
 
-			//移动到恢复点
-			//******************暂时不动Z  轴
+			//Перейти к точке восстановления
+			//******************Временно прекратите перемещение оси Z.
 			sprintf(tmpBuff, "G0 Z%0.2f F2000", tmpPowerPanicData.PositionData[Z_AXIS] + 2);
 			current_command_args = tmpBuff;
 			gcode_G0_G1(0);
@@ -459,12 +459,12 @@ bool PowerPanicResumeWork(uint8_t *Err)
 			print_job_timer.start();
 			print_job_timer.accumulator = tmpPowerPanicData.accumulator;
 
-			//文件跳转
+			//Переход к файлу
 			card.FileSeek(tmpPowerPanicData.FilePosition);
-			//启动打印
+			//Начать печать
 			card.sdprinting = true;
 			
-			//绝对模式
+			//Абсолютный режим
 			relative_mode = false;
 
 			current_position[X_AXIS] = tmpPowerPanicData.PositionData[X_AXIS];
@@ -477,7 +477,7 @@ bool PowerPanicResumeWork(uint8_t *Err)
 
 			Sync_PCounter();
 
-			//速度还原
+			//Скорость восстановления
 			SetG0FeedRate(PowerPanicData.TravelFeedRate);
 			SetG1FeedRate(PowerPanicData.PrintFeedRate);
 
@@ -506,7 +506,7 @@ bool PowerPanicResumeWork(uint8_t *Err)
 
 extern "C"
 {
-//新品电路
+//Новая схема
 #if(SNAP_OLD_BASE == 0)
 void EXTI0_IRQHandler(void)
 {
@@ -517,14 +517,14 @@ void EXTI0_IRQHandler(void)
 	{
 		EXTI->PR = THIS_EXTI_LINE;
 		EXTI->IMR &= ~EXTI_IMR_MR0;
-		//关闭执行头与热床电源
+		//Выключите исполнительную головку и питание подогрева стола.
 		MainPowerOff();
 		TIM1->CCR1 = 0;
 		TIM1->CCR2 = 0;
 
-		//标置断电
+		//Выключить питание
 		StopTriggle(PowerPanicStop);
-		//关闭挤出机电源
+		//Выключите экструдер
 		disable_e0();
 		disable_x();
 		disable_y();

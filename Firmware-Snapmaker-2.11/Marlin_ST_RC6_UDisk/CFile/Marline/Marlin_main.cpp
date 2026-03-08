@@ -265,20 +265,20 @@ inline void gcode_M140();
 inline void gcode_G0_G1(uint16_t Number);
 inline void gcode_G28();
 
-//激光强度百分比值
+//Процентное значение интенсивности лазера
 float laserPercent;
 
-//当前屏的操作
+//Текущие операции на экране
 uint8_t HMICommandSave = 0;
 
-//电机同步标置
+//Настройка синхронизации двигателя
 bool StepperSync = false;
 
-//温度失常标置
+//Калибровка отклонения температуры
 extern bool MaxTampErrorTrig;
 extern bool MinTampErrorTrig;
 
-//标志各个轴是否已回过原点
+//Отметьте, вернулась ли каждая ось в начало координат
 bool HomeAfterReset[3] = {false, false, false};
 
 #if ENABLED(M100_FREE_MEMORY_WATCHER)
@@ -314,7 +314,7 @@ int cmd_queue_index_r = 0;
 int cmd_queue_index_w = 0;
 int commands_in_queue = 0;
 char command_queue[BUFSIZE][MAX_CMD_SIZE];
-//文件位置保存
+//Сохранить местоположение файла
 static uint32_t CommandLine[BUFSIZE];
 
 const float homing_feedrate[] = HOMING_FEEDRATE;
@@ -337,9 +337,9 @@ float home_offset[3] = { 0 };
 float sw_endstop_min[3] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS };
 float sw_endstop_max[3]; 
 
-//电流设定值
+//Текущее значение настройки
 float StepperCurrent;
-//电机电流保持标志
+//Флаг удержания тока двигателя
 bool StepperKeepCurrent = false;
 
 
@@ -633,14 +633,14 @@ void enqueue_and_echo_commands_P(const char* pgcode) {
 }
 
 
-//Add by Paladin:清除所有指令
+//Добавить от Paladin:Очистить все инструкции
 void ClearCommand(void)
 {
     commands_in_queue = 0;
     cmd_queue_index_r = cmd_queue_index_w = 0;
 }
 
-//Add by Paladin:清空指令缓冲区数据
+//Добавлено Paladin: Очистить данные буфера команд.
 void FlushCommand(void)
 {
     commands_in_queue = 0;
@@ -650,35 +650,35 @@ void FlushCommand(void)
         strcpy(command_queue[i], "");
 }
 
-//Paladin  :  获取当前缓冲区读取索引
+//Паладин: получить текущий индекс чтения буфера
 int GetCurrentCommandFilePosition()
 {
     return CommandLine[cmd_queue_index_r];
 }
 
-//Paladin  :  屏幕指令加入
+//Паладин: добавлены экранные команды.
 #if(SNAP_OLD_BASE == 0)
 void Screen_enqueue_and_echo_commands(const char* pgcode, uint32_t Lines, uint8_t Opcode)
 {
-    //缓冲未满
+    //Буфер не заполнен
     if((cmd_queue_index_w + 1) % BUFSIZE != cmd_queue_index_r)
     {
-        //指令入队
+        //Очередь команд
         strcpy(command_queue[cmd_queue_index_w], pgcode);
-        //应答ok
+        //ответ ок
         Screen_send_ok[cmd_queue_index_w] = true;
-        //应答控制字
+        //Контрольное слово ответа
         Screen_send_ok_opcode[cmd_queue_index_w] = Opcode;
-        //代码行号
-        //非打印状态
+        //номер строки кода
+        //состояние отсутствия печати
         if(Opcode == 0x02)
             CommandLine[cmd_queue_index_w] = CommandLine[(cmd_queue_index_w + BUFSIZE - 1) % BUFSIZE];
-        //打印状态
+        //Статус печати
         else
             CommandLine[cmd_queue_index_w] = Lines;
-        //主串口取消应答ok
+        //Главный последовательный порт отменяет ответ, ок
         send_ok[cmd_queue_index_w] = false;
-        //写入索引下移
+        //Индекс записи перемещается вниз
         cmd_queue_index_w = (cmd_queue_index_w + 1) % BUFSIZE;
         commands_in_queue++;
     }
@@ -697,7 +697,7 @@ void delay(uint16_t ms)
  */
 inline void _commit_command(bool say_ok) {
     send_ok[cmd_queue_index_w] = say_ok;
-    //主串口指令的注入，取消屏幕应答ok
+    //Ввод команды основного последовательного порта, отмена ответа экрана, ок
 #if(SNAP_OLD_BASE == 0)
     Screen_send_ok[cmd_queue_index_w] = false;
 #endif
@@ -885,7 +885,7 @@ inline void get_serial_commands() {
             char* npos = (*command == 'N') ? command : NULL; // Require the N parameter to start the line
             char* apos = strchr(command, '*');
 
-            //Paladin:M1000  只能用于屏操作，该指令是切换屏幕界面
+            //Paladin:M1000 можно использовать только для работы с экраном. Эта команда предназначена для переключения интерфейса экрана.
             bool M1000 = (strstr_P(command, PSTR("M1000")) != NULL);
             if(M1000)
             {
@@ -1011,26 +1011,26 @@ inline void get_sdcard_commands() {
         char n;
         card_eof = card.eof();
 
-        //文件未读完
+        //Файл не был прочитан
         if(card_eof == false)
         {
-            //文件读取错误
+            //Ошибка чтения файла
             if(card.get(&n) == (char)-1)
                 n = -1;
         }
         char sd_char = (char)n;
 
-        //首字节，保存文件地址
+        //Первый байт, адрес сохранения файла
         if(sd_count == 0)
             CommandLine[cmd_queue_index_w] = card.postell;
 
-        //文件读取失败，文件已读完，注释，指令读取完成等
+        //Не удалось прочитать файл, файл прочитан, комментарии, чтение команд завершено и т. д.
         if (card_eof || (n == (char)-1)
                 || sd_char == '\n' || sd_char == '\r'
                 || ((sd_char == '#' || sd_char == ':') && !sd_comment_mode)
            ) {
 
-            //Paladin:打印结束
+            //Паладин: конец печати
             if (card_eof) {
                 SERIAL_PROTOCOLLNPGM(MSG_FILE_PRINTED);
                 print_job_timer.stop();
@@ -1054,13 +1054,13 @@ inline void get_sdcard_commands() {
                 }
                 card.LastPercent = 100;
                 HMI_ChangePage(PAGE_PROCESSING);
-                //请求停止
+                //Просьба остановиться
                 StopTriggle(EndPrint);
                 return;
 
             }
 
-            //读不到数据
+            //Невозможно прочитать данные
             if(sd_char == (char)-1)
             {
                 SdRetry++;
@@ -1068,9 +1068,9 @@ inline void get_sdcard_commands() {
                 {
                     card.closefile(false);
                     card.sdprinting = false;
-                    //清除缓存GCODE
+                    //очистить кеш gcode
                     ClearCommand();
-                    //等待走完之前的GCODE  
+                    //Прежде чем закончить, дождитесь gcode.  
                     while (blocks_queued())
                     {
                         manage_heater();
@@ -1085,15 +1085,15 @@ inline void get_sdcard_commands() {
                     StopTriggle(ManualStop);
                     return;
                 }
-                //继续读取数据
+                //Продолжить чтение данных
                 continue;
             }
 
             if (sd_char == '#') stop_buffering = true;
 
-            //新指令开始
-            sd_comment_mode = false; //for new command
-            //空行
+            //Новая команда запускается
+            sd_comment_mode = false; //для новой команды
+            //Пустая строка
             if (!sd_count) continue; //skip empty lines
 
             command_queue[cmd_queue_index_w][sd_count] = '\0'; //terminate string
@@ -1118,7 +1118,7 @@ inline void get_sdcard_commands() {
             if (sd_char == ';') sd_comment_mode = true;
             if (!sd_comment_mode) command_queue[cmd_queue_index_w][sd_count++] = sd_char;
             SdRetry = 0;
-            //终止打印
+            //Завершить печать
             if(IsStoppingPrint() == true)
                 return;
         }
@@ -1138,8 +1138,8 @@ void get_available_commands() {
     // if any immediate commands remain, don't get other commands yet
     if (drain_queued_commands_P()) return;
 
-    //Add by Paladin
-    //SD  打印中或者屏指令保护
+    //Добавил Паладин
+    //SD-печать или защита экранных команд
     if((card.sdprinting == true) || (HMICommandSave != 0))
     {
         while( MYSERIAL.available() > 0) MYSERIAL.read();
@@ -1147,7 +1147,7 @@ void get_available_commands() {
         get_sdcard_commands();
 #endif
     }
-    //非SD  打印中或屏未保护
+    //Печать без SD или экран не защищен
     else
     {
         get_serial_commands();
@@ -2258,7 +2258,7 @@ static void homeaxis(AxisEnum axis) {
         line_to_destination();
         st_synchronize();
 
-        //Paladin:向上移动小距离
+        //Паладин: Поднимитесь на небольшое расстояние.
 #if(Z_HOME_DIR == -1)
         {
             if(axis == Z_AXIS)
@@ -2529,14 +2529,14 @@ void host_keepalive() {
 void SetLaserPercentToPower()
 {
     SetLaserPower(laserPercent);
-	LastLaserPwm = laserpwm;//缓存最后一次激光的强度，用于不带S  值的G0 G1
+	LastLaserPwm = laserpwm;//Кэшировать интенсивность последнего лазера, используемого для G0 G1 без значения S.
 }
-//如果有 P or S，将其转换成百分比，没有就返回false
+//Если есть P или S, преобразуйте его в проценты, если нет, верните false
 bool isLaserSet_P_S()
 {
 	bool isSet = true;
 	
-	if(code_seen('P') == true)//根据百分比设置激光强度
+	if(code_seen('P') == true)//Установите интенсивность лазера в процентах
     {
     	float val = code_value();
     	if(val < 0)
@@ -2578,8 +2578,8 @@ inline void gcode_G0_G1(uint16_t Number) {
             }
         }
 
-#endif //FWRETRACT
-        //Paladin:设置激光强度
+#endif //ФВРЕТРАКТ
+        //Паладин: установите интенсивность лазера.
         if((MachineSelected == MA_LASER_350) || (MachineSelected == MA_LASER))
         {
             int blockindex = block_buffer_head;
@@ -2611,7 +2611,7 @@ inline void gcode_G2_G3(bool clockwise) {
         relative_mode = true;
 #endif
 
-        //Paladin:G2 , G3  用G1  速度
+        //Паладин: G2, G3 использует скорость G1.
         gcode_get_destination(1);
 
 #if ENABLED(SF_ARC_FIX)
@@ -2654,7 +2654,7 @@ inline void gcode_G4() {
     if (!lcd_hasstatus()) LCD_MESSAGEPGM(MSG_DWELL);
     while(millis() < codenum)
     {
-        //Paladin  :  断电
+        //Паладин: отключение электроэнергии
         if(IsStoppingPrint() == true)
             break;
         idle();
@@ -2727,7 +2727,7 @@ inline void gcode_G28() {
     mbl.active = false;
 #endif
 
-    //Paladin:清除BLOCK激光强度
+    //Паладин: очистить блок интенсивности лазера
     for(int i=0;i<BLOCK_BUFFER_SIZE;i++)
         block_buffer[i].LaserPwm = 0;
 
@@ -2797,8 +2797,8 @@ inline void gcode_G28() {
         home_all_axis = false;
 
 
-    //Add by LXM
-    //检测哪个轴回原点
+    //Добавил LXM
+    //Определите, какая ось возвращается в исходное положение
     if(homeX== true)
         HomeAfterReset[0] = true;
     if(homeY == true)
@@ -2806,7 +2806,7 @@ inline void gcode_G28() {
     if(homeZ == true)
         HomeAfterReset[2] = true;
 
-    //全部轴都回原点
+    //Все оси возвращаются в исходное положение
     if(home_all_axis == true)
     {
         HomeAfterReset[0] = true;
@@ -2817,7 +2817,7 @@ inline void gcode_G28() {
 
     //**************************************************
     feedrate = 5000.0f;
-    //只要存在X  轴回原点
+    //Пока есть ось X, вернитесь в начало координат
     if((homeX == true) || (home_all_axis == true))
     {
         //Paladin
@@ -3124,8 +3124,8 @@ inline void gcode_G28() {
     }
 #endif
 
-    //运动完成
-    //更新当前坐标
+    //движение завершено
+    //Обновить текущие координаты
     sync_plan_position();
 
     st_synchronize();
@@ -3897,7 +3897,7 @@ inline void gcode_G30() {
 inline void gcode_G92() {
     bool didE = code_seen(axis_codes[E_AXIS]);
 
-    //Paladin  :  不知道为什么E  轴的设置，不需要等待；现更改为等待
+    //Паладин: Не знаю, почему настройка оси Е не требует ожидания; теперь это изменено на ожидание.
     //if (!didE) st_synchronize();
     //st_synchronize();
 
@@ -3999,20 +3999,20 @@ inline void gcode_M3()
 {
     while(blocks_queued());
 
-    //机器为激光雕刻机
+    //Машина представляет собой лазерный гравировальный станок.
     if( isLaserMachine(MachineSelected) )
     {
-        //查询激光强度
+        //Запрос интенсивности лазера
         if(code_seen('R') == true)
         {
             char tmpBuff[30];
             sprintf(tmpBuff, "echo:Laser %.2f\r\n", laserPercent);
             SERIAL_ECHO(tmpBuff);
         }
-        else if(isLaserSet_P_S() == true)//根据百分比设置激光强度
+        else if(isLaserSet_P_S() == true)//Установите интенсивность лазера в процентах
         {
             SetLaserPercentToPower();            
-			HMI_ShowLaserPower(laserPercent);//刷新屏幕显示
+			HMI_ShowLaserPower(laserPercent);//Обновить отображение экрана
         }
         else
         {
@@ -4020,7 +4020,7 @@ inline void gcode_M3()
 		}
 
     }
-    //机器为CNC
+    //Машина с ЧПУ
     else if(MA_CNC == MachineSelected)
     {
 #if(HAVE_CNC_MCU == 1)
@@ -4045,7 +4045,7 @@ inline void gcode_M3()
 }
 
 /**
-  获取激光输出值
+  Получить значение мощности лазера
   */
 uint16_t GetLaserPower()
 {
@@ -5429,7 +5429,7 @@ inline void gcode_M201() {
             }
         }
     }
-    //Paladin:CNC  或激光时，加速度另外设置
+    //Паладин: При использовании ЧПУ или лазера ускорение задается отдельно.
     else
     {
         for (int8_t i = 0; i < NUM_AXIS; i++) {
@@ -6570,7 +6570,7 @@ inline void gcode_M351() {
 
 #endif // HAS_MICROSTEPS
 /**
- * M1025:设置线性模组长度 参数可选 M,X,Y,Z
+ *M1025: Установите длину линейного модуля. Параметры необязательны: M, X, Y, Z.
  */
 inline void gcode_M1025() {
 	if(code_seen('M'))
@@ -6824,7 +6824,7 @@ void process_next_command() {
 
     KEEPALIVE_STATE(IN_HANDLER);
 
-    //还原G1  速度
+    //Восстановить скорость G1
     feedrate = G1Feedrate;
 
     // Handle a known G, M, or T
@@ -6921,13 +6921,13 @@ void process_next_command() {
                           }
                           break;
 
-                          //M03  主轴顺时针转动
+                          //Шпиндель M03 вращается по часовой стрелке.
                       case 3:
                           if(MA_PRINT != MachineSelected)
                               gcode_M3();
                           break;
 
-                          //M05  主轴停止
+                          //Шпиндель M05 останавливается
                       case 5:
                           //if(MA_CNC == MachineSelected)
                           while(blocks_queued());
@@ -6935,7 +6935,7 @@ void process_next_command() {
                               SetLaserPower(0);
                           else if(MA_CNC == MachineSelected)
                               digitalWrite(LASER_PORT, LASER_PIN, LOW);
-                          //缓存最后一次激光的强度，用于不带S  值的G0  G1
+                          //Кэшировать интенсивность последнего лазера, используемого для G0 G1 без значения S.
                           LastLaserPwm = 0;
                           break;
 
@@ -7322,8 +7322,8 @@ void process_next_command() {
                           break;
 #endif // ENABLED(FILAMENT_WIDTH_SENSOR)
 
-                      case 410: // M410 quickstop - Abort all the planned moves.
-                          //Paladin:  禁用该功能
+                      case 410: // M410 Quickstop — отмените все запланированные действия.
+                          //Паладин: отключить эту функцию
                           //gcode_M410();
                           break;
 
@@ -7429,7 +7429,7 @@ void process_next_command() {
                           }
                           break;
 
-                          //M1001  锁屏
+                          //Экран блокировки M1001
                       case 1001:
                           if(code_seen('L') == true)
                           {
@@ -7442,7 +7442,7 @@ void process_next_command() {
                               else
                                   HMI_ChangePage(PAGE_CNC);
 #else
-                              //串口切换到屏幕
+                              //Переключить последовательный порт на экран
                               UART1_SELK1_PORT->BRR = UART1_SELK1_PIN;
 #endif
                           }
@@ -7453,7 +7453,7 @@ void process_next_command() {
                           }
                           break;
 
-                          //M1005，查询机器类型
+                          //M1005, запрос типа машины
                       case 1005:
                           SERIAL_ECHOPGM("Firmware Version: ");
                           SERIAL_ECHOLNPGM(FIRWARE_VER);
@@ -7461,7 +7461,7 @@ void process_next_command() {
                           SERIAL_ECHOLNPGM(__DATE__);
                           break;
 
-                          //M1006:机器接头检测
+                          //M1006: Обнаружение соединения машины
                       case 1006:
                           if(MA_PRINT == MachineSelected)
                           {
@@ -7482,7 +7482,7 @@ void process_next_command() {
                           }
                           break;
 
-                          //M1007，设置步进电机电流
+                          //M1007, установите ток шагового двигателя
                       case 1007:
                           /*
                              if(code_seen('S') == true)
@@ -7505,16 +7505,16 @@ void process_next_command() {
 #endif
                           break;
 
-                          //Paladin:设置Home Offset 偏移
+                          //Паладин: установить смещение исходного положения
                       case 1009:
                           if(code_seen('X') == true)
                           {
                               fValue = code_value();
-                              //向正方向偏移
+                              //смещение в положительном направлении
                               if(fValue > 0)
                               {
                                   fValue = -fValue;
-                                  //超出15  MM  位置
+                                  //положение за пределами 15 мм
                                   if((fValue + home_offset[X_AXIS]) < -15)
                                   {
                                       SERIAL_ECHOLNPGM("X offset over rang(max)\r\n");
@@ -7525,11 +7525,11 @@ void process_next_command() {
                                       set_home_offset(X_AXIS, fValue);
                                   }
                               }
-                              //向负方向偏移
+                              //Смещение в отрицательном направлении
                               else if(fValue < 0)
                               {
                                   fValue = -fValue;
-                                  //小于2  MM  位置
+                                  //Положение менее 2 мм
                                   if((fValue + home_offset[X_AXIS]) > -2)
                                   {
                                       SERIAL_ECHOLNPGM("X offset over rang(min)\r\n");
@@ -7545,11 +7545,11 @@ void process_next_command() {
                           if(code_seen('Y') == true)
                           {
                               fValue = code_value();
-                              //向正方向偏移
+                              //смещение в положительном направлении
                               if(fValue > 0)
                               {
                                   fValue = -fValue;
-                                  //超出15  MM  位置
+                                  //положение за пределами 15 мм
                                   if((fValue + home_offset[Y_AXIS]) < -15)
                                   {
                                       SERIAL_ECHOLNPGM("Y offset over rang(max)\r\n");
@@ -7560,11 +7560,11 @@ void process_next_command() {
                                       set_home_offset(Y_AXIS, fValue);
                                   }
                               }
-                              //向负方向偏移
+                              //Смещение в отрицательном направлении
                               else if(fValue < 0)
                               {
                                   fValue = -fValue;
-                                  //小于2  MM  位置
+                                  //Положение менее 2 мм
                                   if((fValue + home_offset[Y_AXIS]) > -2)
                                   {
                                       SERIAL_ECHOLNPGM("Y offset over rang(min)\r\n");
@@ -7580,7 +7580,7 @@ void process_next_command() {
                           sync_plan_position();
                           break;
 
-                          //M1010  门开关检测设置
+                          //Настройка обнаружения дверного выключателя M1010
                       case 1010:
                           if(code_seen('S') == true)
                           {
@@ -7602,7 +7602,7 @@ void process_next_command() {
                               SERIAL_ECHOLNPGM("Enclosure: Off");
                           break;
 
-                          //M1021  设置激光模组高度
+                          //M1021 Установка высоты лазерного модуля
                       case 1021:
 #if(HAVE_LASER_EEPROM == 1)
                           if(code_seen('S') == true)
@@ -7619,7 +7619,7 @@ void process_next_command() {
 #endif
                           break;
 
-                          //M1022  设置断料检测
+                          //M1022 Установить обнаружение разрыва материала
                       case 1022:
 #if(HAVE_FALIMENT_SENSOR == 1)
                           if(code_seen('S') == true)
@@ -7637,7 +7637,7 @@ void process_next_command() {
 #endif
                           break;
 
-                          //M1023  测试物料传感器
+                          //Датчик тестового материала M1023
                       case 1023:
 #if(HAVE_FALIMENT_SENSOR == 1)
                           TrigFilamentCheck();
@@ -7676,7 +7676,7 @@ void process_next_command() {
                           }
                           break;
 
-                          //M6000，测试断电续打
+                          //M6000, тестовое возобновление воспроизведения после отключения электроэнергии
                       case 6000:
                           if(PowerPanicData.Valid == 1)
                           {
@@ -7684,7 +7684,7 @@ void process_next_command() {
                           }
                           break;
 
-                          //M7000，切换程序
+                          //M7000, программа переключения
                       case 7000:
                           if(code_seen('S') == true)
                           {
@@ -7715,7 +7715,7 @@ void process_next_command() {
                   gcode_T(codenum);
                   break;
 
-                  //Modify by Paladin:CNC  的G  代码，有此以XYZ  开头，省略了G0
+                  //Модификация Paladin: G-код ЧПУ, начиная с XYZ, без G0.
         case 'X':
         case 'Y':
         case 'Z':
@@ -7771,7 +7771,7 @@ void ok_to_send() {
 }
 
 void clamp_to_software_endstops(float target[3]) {
-    //Paladin:3D  打印才用软件限位开关
+    //Paladin: программный концевой выключатель только для 3D-печати
     if ((min_software_endstops) && (MA_PRINT == MachineSelected)) {
         NOLESS(target[X_AXIS], sw_endstop_min[X_AXIS]);
         NOLESS(target[Y_AXIS], sw_endstop_min[Y_AXIS]);
@@ -7793,7 +7793,7 @@ void clamp_to_software_endstops(float target[3]) {
         NOLESS(target[Z_AXIS], sw_endstop_min[Z_AXIS] + negative_z_offset);
     }
 
-    //Paladin:3D  打印才用软件限位开关
+    //Paladin: программный концевой выключатель только для 3D-печати
     if ((max_software_endstops) && (MA_PRINT == MachineSelected)) {
         NOMORE(target[X_AXIS], sw_endstop_max[X_AXIS]);
         NOMORE(target[Y_AXIS], sw_endstop_max[Y_AXIS]);
@@ -8430,11 +8430,11 @@ void idle(
         bool no_stepper_sleep/*=false*/
 #endif
         ) {
-    //Paladin  :  老机型，3  种模式都检测温度更新温度
+    //Паладин: старая модель, все 3 режима определяют температуру и обновляют температуру.
 #if(SNAP_OLD_BASE == 1)
     manage_heater();
 #else
-    //Paladin  :  只有3D  打印才检测温度
+    //Паладин: только 3D-печать определяет температуру
     if(MA_PRINT == MachineSelected)
         manage_heater();
 #endif
@@ -8444,13 +8444,13 @@ void idle(
 #endif
             );
     host_keepalive();
-    //Paladin:屏幕线程
+    //Паладин: ветка экрана
     HMICommandProcess();
     HMIScreenShow();
     lcd_update();
-    //Paladin:外罩关闭处理
-    //外罩设备已打开
-    //待机状态
+    //Паладин: процесс закрытия крышки
+    //Крышка устройства открыта
+    //Состояние ожидания
 #if(SHIELD_AUTO_CONTROL == 1)
     if(card.isFileOpen() == false)
     {
@@ -8482,27 +8482,27 @@ void idle(
     }
 #endif
 
-    //只要加热了就开风扇和灯
+    //Пока он нагрет, включите вентилятор и свет.
     if((target_temperature[0] > 0) || (target_temperature[1] > 0) || (target_temperature_bed > 0))
     {
         ShieldLedOn();
         ShieldFanOn();
     }
 
-    //外罩灯已关闭
+    //Свет в корпусе выключен
     if(ShieldLedIsTurnOn == false)
     {
-        //时间超过
+        //время превышает
         if(ShieldLedOffTick < millis())
         {
             ShieldLedControlEn = true;
         }
     }
 
-    //外罩风扇已关闭
+    //Вентилятор капота выключен
     if(ShieldFanIsTurnOn == false)
     {
-        //时间超过
+        //время превышает
         if(ShieldFanOffTick < millis())
         {
             ShieldFanControlEn = true;
@@ -8533,10 +8533,10 @@ void manage_inactivity(bool ignore_stepper_queue/*=false*/) {
 
     millis_t ms = millis();
 
-    //Paladin:暂时没用到
+    //Паладин: еще не использовался
     //if (max_inactive_time && ELAPSED(ms, previous_cmd_ms + max_inactive_time)) kill(PSTR(MSG_KILLED));
 
-    //Paladin:如果处于打印状态，就不再关闭电机
+    //Паладин: мотор больше не выключается при печати.
     if((card.isFileOpen() == false) || (StepperKeepCurrent == true))
     {
         if (stepper_inactive_time && ELAPSED(ms, previous_cmd_ms + stepper_inactive_time)
@@ -8676,7 +8676,7 @@ void manage_inactivity(bool ignore_stepper_queue/*=false*/) {
     check_axes_activity();
 }
 
-//Paladin:温度失常检测
+//Паладин: обнаружение температурных аномалий
 #ifdef NO_KILL
 void TampErrorCheck(void)
 {
@@ -8903,13 +8903,13 @@ void stop() {
     }
 }
 
-//Paladin:检查当前缓冲区是否存在指令
+//Паладин: проверьте, существует ли инструкция в текущем буфере.
 uint8_t GetCommandBuff()
 {
     return commands_in_queue;
 }
 
-//Paladin:更新缓冲区索引
+//Паладин: обновить индекс буфера
 void DispatchComandIndex()
 {
     if(commands_in_queue > 0)
@@ -9217,45 +9217,45 @@ void UartSwitch()
         SwitchIoStat[1] = SwitchIoStat[0];
         SwitchIoStat[0] = 0;
 #if defined(UART1_SEL_PORT) && defined(PC_PLUG_DET_PORT)
-        //缓冲PC  连接状态
-        //PC  未连接
+        //Буферизация состояния подключения к ПК
+        //ПК не подключен
         if(READ(PC_PLUG_DET_PORT,PC_PLUG_DET_PIN) == true)
         {
-            //之前状态为已连接
+            //Предыдущий статус был подключен
             if(((LastSwitchStat & 1) == 1))
             {
-                //标置状态
+                //Статус маркировки
                 LastSwitchStat &= ~1;
-                //切换到安卓 端
+                //Переключиться на Андроид
                 digitalWrite(UART1_SEL_PORT, UART1_SEL_PIN, LOW);
             }
         }
-        //PC  已连接 
+        //ПК подключен 
         else
         {
-            //之前状态为未连接，且屏幕未请求保持
+            //Предыдущий статус не был подключен и экран не просил удерживать.
             if(((LastSwitchStat & 1) != 1) && (ScreenRequestHolding == false))
             {
-                //标置状态
+                //Статус маркировки
                 LastSwitchStat |= 1;
-                //切换到PC  端
+                //Переключиться на ПК
                 digitalWrite(UART1_SEL_PORT, UART1_SEL_PIN, HIGH);
             }
         }
 #endif
 
 #if defined(UART2_SEL_PORT) && defined(ANDROID_DET_PORT)
-        //缓冲安卓屏幕  连接状态
-        //安卓屏幕未连接
+        //Буферизация состояния подключения экрана Android
+        //Экран Android не подключен
         if(READ(ANDROID_DET_PORT,ANDROID_DET_PIN) == true)
         {
-            //切换到龙屏
+            //Переключиться на экран дракона
             digitalWrite(UART2_SEL_PORT, UART1_SEL_PIN, HIGH);
         }
-        //安卓屏幕已连接
+        //Экран Android подключен
         else
         {
-            //切换到安卓端
+            //Переключиться на Андроид
             digitalWrite(UART2_SEL_PORT, UART1_SEL_PIN, LOW);
         }
 #endif
@@ -9315,7 +9315,7 @@ void loop() {
 
     ShieldInit();
 
-    //调平失效
+    //Ошибка выравнивания
     mbl.active = false;
 
 #ifdef LED_R_PORT
@@ -9330,7 +9330,7 @@ void loop() {
         UDiskIdleProceess();
         if (commands_in_queue < (BUFSIZE - 4)) get_available_commands();
 
-        //Modify by Paladin:系统不要求停止，并且队列中有指令待执行
+        //Модификация Paladin: Система не требует остановки, и в очереди есть инструкции для выполнения.
         if((commands_in_queue > 0) && (IsStoppingPrint() == false)) 
         {
             //Paladin

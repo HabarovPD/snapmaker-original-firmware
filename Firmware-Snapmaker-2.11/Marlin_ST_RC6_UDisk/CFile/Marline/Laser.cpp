@@ -15,7 +15,7 @@
 #include "stm32f10x_conf.h"
 
 
-//中断入口需要查看.S  文件
+//Для входа в прерывание необходимо просмотреть файл .S.
 
 
 
@@ -187,10 +187,10 @@ static void I2CReadByte(U8 *pBuff, U8 Len)
 
 
 /********************************************
-写入EEPROM	数据
-pData  :  数据写入区指针
-Len  :	写入长度
-返回值:  true  成功，false	失败
+Запись данных EEPROM
+pData: указатель области записи данных.
+Лен: написать длину
+Возвращаемое значение: true в случае успеха, false в случае неудачи.
 ********************************************/
 bool WriteData(uint16_t Address, uint8_t *pData, uint8_t Len)
 {
@@ -225,10 +225,10 @@ bool WriteData(uint16_t Address, uint8_t *pData, uint8_t Len)
 }
 
 /********************************************
-读取EEPROM  数据
-pData  :  数据接收区指针
-Len  :  读取长度
-返回值:  true  成功，false  失败
+Чтение данных EEPROM
+pData: указатель области приема данных.
+Лен: длина чтения
+Возвращаемое значение: true в случае успеха, false в случае неудачи.
 ********************************************/
 bool ReadData(uint16_t Address, uint8_t *pData, uint8_t Len)
 {
@@ -265,9 +265,9 @@ bool ReadData(uint16_t Address, uint8_t *pData, uint8_t Len)
 
 
 /********************************************
-读取激光模组焦点高度
-ZValue  :  保存数据的变量指针
-返回值:  true  读取成功，false  读取失败
+Считайте высоту фокуса лазерного модуля
+ZValue: указатель переменной для сохранения данных.
+Возвращаемое значение: true, если чтение прошло успешно, false, если чтение не удалось.
 ********************************************/
 char LoadLaserFocusZValue(float *ZValue)
 {
@@ -289,9 +289,9 @@ char LoadLaserFocusZValue(float *ZValue)
 }
 
 /********************************************
-保存激光模组焦点高度
-ZValue  :  高度值
-返回值:  true  保存成功，false  保存失败
+Сохранение высоты фокусировки лазерного модуля
+ZValue: значение высоты
+Возвращаемое значение: true, если сохранение прошло успешно, и false, если сохранение не удалось.
 ********************************************/
 bool SaveLaserFocusZValue(float ZValue)
 {
@@ -322,9 +322,9 @@ bool SaveLaserFocusZValue(float ZValue)
 }
 
 /********************************************
-数据测试
-Page0  :  写入单数
-Page1  :  写入双数
+Тестирование данных
+Страница0: написать нечетное число
+Страница 1: Напишите четные числа.
 ********************************************/
 bool EEPRomTest()
 {
@@ -350,7 +350,7 @@ bool EEPRomTest()
 #endif
 
 /********************************************
-初始化激光
+Инициализация лазера
 ********************************************/
 void LaserInit(void)
 {
@@ -376,21 +376,21 @@ void LaserInit(void)
 		float tmpLaserZValue;
 		char Result;
 		Result = LoadLaserFocusZValue(&tmpLaserZValue);
-		//高度读取失败，存储器损坏
+		//Не удалось прочитать высоту, память повреждена
 		if(Result == (char)-1)
 		{
 			
 		}
-		//存储器未初始化
+		//Память не инициализируется
 		else if(Result == (char)-2)
 		{
 			LaserZValue = 35;
 			SaveLaserFocusZValue(LaserZValue);
 		}
-		//高度读取成功
+		//Высота успешно прочитана
 		else
 		{
-			//与主控存储高度不一致
+			//Крайне несовместимо с основным хранилищем управления.
 			if(tmpLaserZValue != LaserZValue)
 			{
 				LaserZValue = tmpLaserZValue;
@@ -400,7 +400,7 @@ void LaserInit(void)
 	}
 	#endif
 
-	//旧的板子需要把与非门控制脚打开
+	//На старых платах необходимо открыть управляющий контакт затвора NAND.
 	#if(SNAP_OLD_BASE == 1)
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_1;
@@ -410,21 +410,21 @@ void LaserInit(void)
 
 	#if((LASER_USE_DAC == 1) && (SNAP_OLD_BASE == 0))
 	
-	//DAC  方式调光
+	//Затемнение режима ЦАП
 	DAC_InitTypeDef DAC_InitStruct;
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_DAC, ENABLE);           
 	RCC_APB1PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
 
-	//关闭激光
+	//Выключить лазер
 	LASER_PWM_PORT->BSRR = LASER_PWM_PIN;
 	DAC_SetChannel1Data( DAC_Align_12b_R, 0);
 
-	//激光DAC  脚
+	//Лазерный вывод ЦАП
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AIN;
 	GPIO_InitStruct.GPIO_Pin = LASER_DAC_PIN;
 	GPIO_Init(LASER_DAC_PORT, &GPIO_InitStruct);
 
-	//激光PWM  开关脚
+	//Контакт переключателя лазерного ШИМ
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStruct.GPIO_Pin = LASER_PWM_PIN;
 	GPIO_Init(LASER_PWM_PORT, &GPIO_InitStruct);
@@ -437,7 +437,7 @@ void LaserInit(void)
 	DAC_Init(DAC_Channel_1, &DAC_InitStruct);
 	DAC_Cmd(DAC_Channel_1, ENABLE);
 	#else
-	//PWM  方式
+	//режим ШИМ
 	TIM_DeInit(TIM1);
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1 | RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOC | RCC_APB2Periph_AFIO, ENABLE);
 
@@ -445,7 +445,7 @@ void LaserInit(void)
 	TIM_OCInitTypeDef TIM_OCInitStruct;
 	TIM_BDTRInitTypeDef TIM_BDTRInitStruct;
 
-	//100HZ  ，255  Level
+	//100 Гц, 255 уровень
 	GPIO_PinRemapConfig(GPIO_PartialRemap_TIM1, ENABLE);
 
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;
@@ -489,16 +489,16 @@ void LaserInit(void)
 	#endif
 	LaserFocusPwm = 8;
 
-	// 关闭门外罩 检测
+	// Обнаружение закрытия дверцы
 	DisableDoorCheck();
 
-	//DAC_SetChannel1Data( DAC_Align_12b_R, 0);
-	//Add by Paladin:Update Acc according the machine
+	//DAC_SetChannel1Data(DAC_Align_12b_R, 0);
+	//Добавлено Paladin: Обновить акк согласно машине
 	gcode_M201();
 
-	//自检
+	//самопроверка
 	SystemSelfCheck();
-	//开启电源
+	//Включите питание
 	if((SysFaultFlag & FAULT_FLAG_LOAD & FAULT_FLAG_BED & FAULT_FLAG_HEATER0))
 	{
 		MachineMode = WORK_MODE_IDLE;
@@ -507,7 +507,7 @@ void LaserInit(void)
 
 
 /********************************************
-逆始化激光
+лазер обратной инициализации
 ********************************************/
 void LaserDeinit(void)
 {
@@ -549,13 +549,13 @@ void LaserDeinit(void)
 	GPIO_Init(LASER_PORT, &GPIO_InitStruct);
 	#endif
 	
-	//100HZ  ，255  Level
+	//100 Гц, 255 уровень
 	GPIO_PinRemapConfig(GPIO_PartialRemap_TIM1, DISABLE);
 	#endif
 }
 
 /*****************************************************
-激光变量初始化
+Лазерная инициализация переменных
 *****************************************************/
 void LaserVariableInit(void)
 {
@@ -568,7 +568,7 @@ void LaserVariableInit(void)
 }
 
 /*****************************************************
-激光处理进程
+процесс лазерной обработки
 *****************************************************/
 void LaserProcess(void)
 {
@@ -579,11 +579,11 @@ void LaserProcess(void)
 		UDiskIdleProceess();
 		if (commands_in_queue < (BUFSIZE - 4)) get_available_commands();
 
-		//Modify by Paladin:系统不要求停止，并且队列中有指令待执行
+		//Модификация Paladin: Система не требует остановки, и в очереди есть инструкции для выполнения.
 		
 		if ((commands_in_queue > 0) && (IsStoppingPrint() == false)) 
 		{
-			//Paladin
+			//Паладин
 			process_next_command();
 			DispatchComandIndex();
 			ShieldLedOn();
@@ -591,7 +591,7 @@ void LaserProcess(void)
 		}
 		
 		
-		//Paladin
+		//Паладин
 		FinishPrintProcess();
 		PauseProcess();
 		checkHitEndstops();
@@ -604,7 +604,7 @@ void LaserProcess(void)
 }
 
 /*****************************************************
-//Linear interpolation 线性插值
+//Линейная интерполяция Линейная интерполяция
 *****************************************************/
 uint16_t LaserPowerLERP(float v)
 {
@@ -616,10 +616,10 @@ uint16_t LaserPowerLERP(float v)
     }
     else if( v + 1 >= POWER_TABLE_SIZE )
     {
-        return LaserPowerTable[POWER_TABLE_SIZE - 1];//数据范围不对
+        return LaserPowerTable[POWER_TABLE_SIZE - 1];//Неверный диапазон данных
     }
-    int int_v = int(v);//整数部分
-    float float_v = v - int_v;//x小数部分
+    int int_v = int(v);//Целая часть
+    float float_v = v - int_v;//Х десятичная часть
     ret = (uint16_t)(LaserPowerTable[int_v] + (LaserPowerTable[int_v + 1] - LaserPowerTable[int_v]) * float_v);
     return ret;
 }

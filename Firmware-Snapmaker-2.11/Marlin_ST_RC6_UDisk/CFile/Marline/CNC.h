@@ -15,7 +15,7 @@ EXT_CNC void CncProcess(void);
 EXT_CNC void CncSetRPM(uint16_t RPM);
 
 #if(HAVE_CNC_MCU == 1)
-//当前CNC  转速
+//Текущая скорость ЧПУ
 EXT_CNC uint16_t CurRPM;
 #endif
 

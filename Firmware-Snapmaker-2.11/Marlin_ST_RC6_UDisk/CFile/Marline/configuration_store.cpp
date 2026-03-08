@@ -354,7 +354,7 @@ void Config_StoreSettings()  {
   EEPROM_WRITE_VAR(i, StepperCurrent);
   EEPROM_WRITE_VAR(i,base_max_pos);
   #if(HAVE_LASER_EEPROM == 1)
-  //Paladin:激光高度
+  //Паладин: Высота лазера
   EEPROM_WRITE_VAR(i, LaserZValue);
   #endif
 
@@ -550,7 +550,7 @@ void Config_RetrieveSettings() {
 	EEPROM_READ_VAR(i,base_max_pos);
 	update_max_pos();
 	#if(HAVE_LASER_EEPROM == 1)
-    //Paladin:激光高度
+    //Паладин: Высота лазера
     EEPROM_READ_VAR(i, LaserZValue);
     #endif
     EEPROM_READ_VAR(i, volumetric_enabled);
@@ -624,12 +624,12 @@ void Config_ResetDefault() {
   base_max_pos[Y_AXIS] = Y_MAX_POS; 
   base_max_pos[Z_AXIS] = Z_MAX_POS; 
   update_max_pos();
-  // 只要是新增门检测开关的代码，默认关闭状态
+  // Если добавлен код переключателя обнаружения двери, она будет закрыта по умолчанию.
   #ifdef DOOR_PORT
   DoorCheckEnable = false;
   #endif
 
-  //断电检测
+  //Обнаружение отключения электроэнергии
   #if(SNAP_OLD_BASE == 1)
   PowerPanicCheckEnable = false;
   #else

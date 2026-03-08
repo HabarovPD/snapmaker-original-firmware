@@ -397,8 +397,8 @@ extern uint8_t active_extruder;
 extern void calculate_volumetric_multipliers();
 
 
-//Paladin:我的变量
-//电机电流保持标志
+//Паладин: мои переменные
+//Флаг удержания тока двигателя
 extern bool StepperKeepCurrent;
 
 #define MA_PRINT	1
@@ -416,14 +416,14 @@ extern bool StepperKeepCurrent;
 //laser detect
 #define isLaserMachine(machine) ( machine>MA_CNC?1:0 )
 
-//激光输出方法定义
+//Определение метода вывода лазера
 #if (LASER_USE_DAC == 1)
     #define laserpwm DAC->DHR12R1
 #else
     #define laserpwm TIM1->CCR2
 #endif
 
-//v  功率0 -100
+//v Мощность 0–100
 #ifdef DOOR_PORT
     #define isLaserDoorCheckOut(v) (DoorCheckEnable == true && READ(DOOR_PORT, DOOR_PIN) == true)
     #define	SetLaserPower(v) laserpwm = (DoorCheckEnable == true && READ(DOOR_PORT, DOOR_PIN) == true && v > LaserSafePercent) ? 0 : LaserPowerLERP(v)
@@ -433,7 +433,7 @@ extern bool StepperKeepCurrent;
     #define SetLaserPwm(v)   laserpwm  = v
 #endif
 
-//调焦使用
+//Использовать фокус
 #define SetLaserLowPower() SetLaserPwm(LaserFocusPwm)
 
 extern void FlushCommand(void);

@@ -46,9 +46,9 @@ char PrintFileName[FILE_PER_PAGE][FILENAME_LENGTH];
 #else
 char FileListBuff[1028];
 #endif
-//指令暂存缓冲，正确解析之后，指令存放在这里
+//Временный буфер инструкций. После корректного парсинга здесь сохраняются инструкции.
 static char tmpBuff[372];
-//SD  插入状态
+//Статус вставки SD
 static bool SdInsert = false;
 
 static volatile uint8_t ReadBuff[512];
@@ -63,14 +63,14 @@ static volatile uint16_t WriteHead;
 static uint16_t Packs;
 
 
-//检测指令缓冲是否为空
+//Проверьте, пуст ли буфер инструкций
 #define CMD_BUFF_EMPTY()	(GetCommandBuff()>0?false:true)
-//U  盘枚举成功
+//Перечисление USB-дисков выполнено успешно
 #define IS_UDISK_INSERTED DiskInserted
 
 #define sprintf_P sprintf
 
-//调平点索引
+//Индекс точки выравнивания
 uint8_t PointIndex;
 float MeshPointZ[4];
 uint16_t ZHomeOffsetIndex;
@@ -85,20 +85,20 @@ uint16_t ZHomeOffsetIndex;
 #if(SNAP_OLD_BASE == 1)
 void ScreenLockCheck(void)
 {
-	//已锁屏
+	//Экран заблокирован
 	if(ScreenLock == true)
 	{
-		//没有运动块也没有G  代码堆
+		//Никаких блоков движения и стеков G-кода.
 		if((CMD_BUFF_EMPTY() == true) && (blocks_queued() == false))
 		{
-			//超时
+			//тайм-аут
 			if(ScreenLockTick < millis())
 			{
 				ScreenLockTick = millis() + 2000;
 				ScreenLock = false;
 			}
 		}
-		//有新代码或运动块
+		//Имеется новый код или блокировка движения.
 		else
 		{
 			ScreenLockTick = millis() + 2000;
@@ -118,33 +118,32 @@ short HmiGetCommand(unsigned char *pBuff)
 	tmphead = ReadHead;
 	tmptail = ReadTail;
 	
-	//没数据
+	//Нет данных
 	if (tmphead == tmptail)
 	{
 		return (short)-1;
 	}
 
 	/*
-	if(ReadBuff[tmptail] != 0xAA)
+	если (ReadBuff[tmptail] != 0xAA)
 	{
 		tmptail = (tmptail + 1) % sizeof(ReadBuff);
-		//更新读指针
-		ReadTail = tmptail;
-		if(ReadTail == ReadHead)
+		//Обновить указатель чтения
+		ReadTail = tmptail; если (ReadTail == ReadHead)
 			return (char)-1;
 	}
 	*/
 
 	tmplen = (uint16_t)((tmphead + sizeof(ReadBuff)- tmptail) % sizeof(ReadBuff));
 	
-	//数据长度足够
+	//Длина данных достаточна
 	while(tmplen > 8)
 	{
 		if(ReadBuff[tmptail] != 0xAA)
 		{
 			tmptail = (tmptail + 1) % sizeof(ReadBuff);
 			tmplen--;
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 			continue;
 		}
@@ -152,27 +151,27 @@ short HmiGetCommand(unsigned char *pBuff)
 		{
 			tmptail = (tmptail + 2) % sizeof(ReadBuff);
 			tmplen = tmplen - 2;
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 			continue;
 		}
-		//读取包长
+		//Чтение длины пакета
 		uint8_t commandLen = ReadBuff[(tmptail + 2) % sizeof(ReadBuff)];
 
-		//缓冲数据足够
+		//достаточно буферизованных данных
 		if(commandLen <= (tmplen - 4))
 		{
-			//复制数据
+			//Копировать данные
 			for(i=0;i<(commandLen + 4);i++)
 			{
 				pBuff[i] = ReadBuff[tmptail];
 				tmptail = (tmptail + 1) % sizeof(ReadBuff);
 			}
 
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 
-			//校验
+			//проверять
 			checksum = 0;
 			for(i=0;i<commandLen;i++)
 				checksum = checksum + pBuff[i + 3];
@@ -183,7 +182,7 @@ short HmiGetCommand(unsigned char *pBuff)
 			//_rx_buffer->tail = _rx_buffer->head = 0;
 			return commandLen + 4;
 		}
-		//数据长度不足
+		//Недостаточная длина данных
 		else
 		{
 			return (short)-1;
@@ -204,7 +203,7 @@ short HmiGetCommand(unsigned char *pBuff)
 	tmphead = ReadHead;
 	tmptail = ReadTail;
 	
-	//没数据
+	//Нет данных
 	if (tmphead == tmptail)
 	{
 		return (short)-1;
@@ -212,14 +211,14 @@ short HmiGetCommand(unsigned char *pBuff)
 
 	tmplen = (uint16_t)((tmphead + sizeof(ReadBuff)- tmptail) % sizeof(ReadBuff));
 	
-	//数据长度足够
+	//Длина данных достаточна
 	while(tmplen > 9)
 	{
 		if(ReadBuff[tmptail] != 0xAA)
 		{
 			tmptail = (tmptail + 1) % sizeof(ReadBuff);
 			tmplen--;
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 			continue;
 		}
@@ -227,41 +226,41 @@ short HmiGetCommand(unsigned char *pBuff)
 		{
 			tmptail = (tmptail + 2) % sizeof(ReadBuff);
 			tmplen = tmplen - 2;
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 			continue;
 		}
-		//读取包长
+		//Чтение длины пакета
 		uint16_t commandLen = (ReadBuff[(tmptail + 2) % sizeof(ReadBuff)] << 8) | ReadBuff[(tmptail + 3) % sizeof(ReadBuff)];
-		//包长效验错误
+		//Ошибка проверки длины пакета
 		if((((commandLen >> 8) & 0xff) ^ (commandLen & 0xff)) != ReadBuff[(tmptail + 5) % sizeof(ReadBuff)])
 		{
 			tmptail = (tmptail + 2) % sizeof(ReadBuff);
 			tmplen = tmplen - 2;
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 			continue;
 		}
 
-		//缓冲数据足够
+		//достаточно буферизованных данных
 		if(commandLen <= (tmplen - 8))
 		{
-			//复制数据
+			//Копировать данные
 			for(i=0;i<(commandLen + 8);i++)
 			{
 				pBuff[i] = ReadBuff[tmptail];
 				tmptail = (tmptail + 1) % sizeof(ReadBuff);
 			}
 
-			//更新读指针
+			//Обновить указатель чтения
 			ReadTail = tmptail;
 
-			//校验
+			//проверять
 			checksum = 0;
 			for(i=0;i<(commandLen-1);i=i+2)
 				checksum += (pBuff[i + 8] << 8) | pBuff[i + 9];
 
-			//奇偶判断
+			//паритетное решение
 			if(commandLen % 2)
 				checksum += pBuff[commandLen + 8 - 1];
 
@@ -274,7 +273,7 @@ short HmiGetCommand(unsigned char *pBuff)
 			//_rx_buffer->tail = _rx_buffer->head = 0;
 			return commandLen + 8;
 		}
-		//数据长度不足
+		//Недостаточная длина данных
 		else
 		{
 			return (short)-1;
@@ -317,16 +316,16 @@ void HMICommandProcess(void)
 	if(i == (short)-1)
 	{
 		/*
-		if((millis() - CheckComTick) > 1000)
+		if((millis() -CheckComTick) > 1000)
 		{
-			CheckComTick = millis();
+			CheckComTick = миллис();
 			HMI_GetCurrentPage();
-			if(NoComCount < 10)
-				NoComCount++;
+			если (НоКомКаунт < 10)
+				НоКомКаунт++;
 		}
 		*/
 	}
-	//升级协议，老主控才支持升级屏幕
+	//Протокол обновления, только старые контроллеры поддерживают обновление экрана
 	else if(tmpBuff[7] == 0x18)
 	{
 		uint16_t PackRequest;
@@ -359,12 +358,12 @@ void HMICommandProcess(void)
 				HMI_SendUpdatePack(PackRequest);
 		}
 	}
-	//屏幕协议
+	//протокол экрана
 	else
 	{
 		ShieldLedOn();
 		eventId = tmpBuff[7];
-		//按钮
+		//кнопка
 		if((eventId == 1) && (ScreenLock == false))
 		{
 			ID = (uint16_t)(tmpBuff[3] << 8) | (uint8_t)tmpBuff[4];
@@ -372,7 +371,7 @@ void HMICommandProcess(void)
 			switch((uint16_t)ID)
 			{
 				case BUTTON_MOTOR_HOME:
-					//电机不在同步中
+					//Двигатель не синхронизирован
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						HMI_ChangePage(8);
@@ -391,13 +390,13 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//换料
+				//Изменить материалы
 				case BUTTON_CHANGE_FILAMENT:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 						HMI_ChangePage(PAGE_CHANGEFILAMENT);
 				break;
 
-				//停止加热
+				//Остановить отопление
 				case BUTTON_STOP_HEAT:
 				case BUTTON_END_HEAD:
 				case BUTTON_STOP_HEAT_2:
@@ -424,7 +423,7 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//温度加
+				//температура плюс
 				case BUTTON_TAMP_INC:
 					SetTamp = (int)target_temperature[0];
 					if(SetTamp < 250)
@@ -437,7 +436,7 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//温度减
+				//температура минус
 				case BUTTON_TAMP_DEC:
 					SetTamp = (int)target_temperature[0];
 					if(SetTamp > 200)
@@ -457,7 +456,7 @@ void HMICommandProcess(void)
 						{
 							strcpy(tmpCardFileNameSelected, CardFileName[0]);
 							strcpy(PrintFileNameSelected, PrintFileName[0]);
-							//跳转到确认对话框
+							//Перейти к диалоговому окну подтверждения
 							HMI_ChangePage(PAGE_CONFIRMPRINT);
 						}
 					}
@@ -470,7 +469,7 @@ void HMICommandProcess(void)
 						{
 							strcpy(tmpCardFileNameSelected, CardFileName[1]);
 							strcpy(PrintFileNameSelected, PrintFileName[1]);
-							//跳转到确认对话框
+							//Перейти к диалоговому окну подтверждения
 							HMI_ChangePage(PAGE_CONFIRMPRINT);
 						}
 					}
@@ -483,7 +482,7 @@ void HMICommandProcess(void)
 						{
 							strcpy(tmpCardFileNameSelected, CardFileName[2]);
 							strcpy(PrintFileNameSelected, PrintFileName[2]);
-							//跳转到确认对话框
+							//Перейти к диалоговому окну подтверждения
 							HMI_ChangePage(PAGE_CONFIRMPRINT);
 						}
 					}
@@ -496,7 +495,7 @@ void HMICommandProcess(void)
 						{
 							strcpy(tmpCardFileNameSelected, CardFileName[3]);
 							strcpy(PrintFileNameSelected, PrintFileName[3]);
-							//跳转到确认对话框
+							//Перейти к диалоговому окну подтверждения
 							HMI_ChangePage(PAGE_CONFIRMPRINT);
 						}
 					}
@@ -509,7 +508,7 @@ void HMICommandProcess(void)
 						{
 							strcpy(tmpCardFileNameSelected, CardFileName[4]);
 							strcpy(PrintFileNameSelected, PrintFileName[4]);
-							//跳转到确认对话框
+							//Перейти к диалоговому окну подтверждения
 							HMI_ChangePage(PAGE_CONFIRMPRINT);
 						}
 					}
@@ -522,7 +521,7 @@ void HMICommandProcess(void)
 						{
 							strcpy(tmpCardFileNameSelected, CardFileName[5]);
 							strcpy(PrintFileNameSelected, PrintFileName[5]);
-							//跳转到确认对话框
+							//Перейти к диалоговому окну подтверждения
 							HMI_ChangePage(PAGE_CONFIRMPRINT);
 						}
 					}
@@ -537,9 +536,9 @@ void HMICommandProcess(void)
 						else
 							HMI_ChangePage(PAGE_CNC);
 							
-						//清除文件个数
+						//Очистить количество файлов
 						FileCounts = 0;
-						//开始打印选择的文件
+						//Начать печать выбранных файлов
 						//card.StartSelectPrint(PrintFileNameSelected);
 						strcpy(CardFileNameSelected, tmpCardFileNameSelected);
 						card.openFile(PrintFileNameSelected, true);
@@ -552,7 +551,7 @@ void HMICommandProcess(void)
 						
 						if((MachineSelected == MA_LASER) || (MachineSelected == MA_LASER_350))
 						{
-							//门已关闭
+							//дверь закрыта
 							#ifdef DOOR_PORT
 							if(DoorCheckEnable == true)
 							{
@@ -592,7 +591,7 @@ void HMICommandProcess(void)
 						PowerPanicData.PositionData[3] = 0;
 						PowerPanicData.GCodeSource = GCODE_SOURCE_UDISK;
 						PowerPanicData.MachineType = MachineSelected;
-						//使能检测
+						//Включить обнаружение
 						EnablePowerPanicCheck();
 						if(isLaserMachine(MachineSelected) == 1)
 							EnableDoorCheck();
@@ -605,14 +604,14 @@ void HMICommandProcess(void)
 						HMI_ChangePage(PAGE_PRINT);
 					else
 						HMI_ChangePage(PAGE_CNC);
-					//清除文件个数
+					//Очистить количество файлов
 					FileCounts = 0;
 				break;
 				
 
-				//文件显示上一页
+				//Файл показывает предыдущую страницу
 				case BUTTON_NEXT_PAGE_UP:
-					//没有文件或正在搜文件中
+					//Нет файла или поиск файлов
 					if((FileCounts == 0) || (SeekingFile == 1) || (ShowFileCount > 0))
 					{
 						break;
@@ -621,10 +620,10 @@ void HMICommandProcess(void)
 					{
 						CurFilePage++;
 						FileIndex = CurFilePage * FILE_PER_PAGE;
-						//最后一页
+						//последняя страница
 						if(CurFilePage == (FilePages - 1))
 						{
-							//非整数
+							//нецелый
 							if((FileCounts % FILE_PER_PAGE) != 0)
 								SeekFileCount = (FileCounts % FILE_PER_PAGE);
 							else
@@ -634,25 +633,25 @@ void HMICommandProcess(void)
 						{
 							SeekFileCount = FILE_PER_PAGE;
 						}
-						//清空列表
+						//Очистить список
 						for(i=0;i<FILE_PER_PAGE;i++)
 						{
 							CardFileName[i][0] = 0;
 							PrintFileName[i][0] = 0;
 						}
-						//标识需要查找文件
+						//Определяет файл, который нужно найти
 						SeekingFile = 1;
-						//显示文件个数与查找个数相同
+						//Количество отображаемых файлов совпадает с количеством искомых файлов.
 						ShowFileCount = FILE_PER_PAGE;
-						//显示文件索引从0开始
+						//Индекс файла отображения начинается с 0
 						ShowFileIndex = 0;
 					}
 				break;
 
 
-				//显示文件下一页
+				//Показать следующую страницу файла
 				case BUTTON_PREV_PAGE_UP:
-					//没有文件或正在搜文件中
+					//Нет файла или поиск файлов
 					if((FileCounts == 0) || (SeekingFile == 1) || (ShowFileCount > 0))
 					{
 						break;
@@ -669,33 +668,33 @@ void HMICommandProcess(void)
 						{
 							SeekFileCount = FileCounts;
 						}
-						//清空列表
+						//Очистить список
 						for(i=0;i<FILE_PER_PAGE;i++)
 						{
 							CardFileName[i][0] = 0;
 							PrintFileName[i][0] = 0;
 						}
-						//标识需要查找文件
+						//Определяет файл, который нужно найти
 						SeekingFile = 1;
-						//显示文件个数与查找个数相同
+						//Количество отображаемых файлов совпадает с количеством искомых файлов.
 						ShowFileCount = FILE_PER_PAGE;
-						//显示文件索引从0开始
+						//Индекс файла отображения начинается с 0
 						ShowFileIndex = 0;
 					}
 				break;
 
-				//退出文件选择
+				//Выйти из выбора файла
 				case BUTTON_SELECT_FILE_BACK:
 				case BUTTON_SELECT_FILE_HOME:
 					if(MachineSelected == MA_PRINT)
 						HMI_ChangePage(PAGE_PRINT);
 					else
 						HMI_ChangePage(PAGE_CNC);
-					//清除文件个数
+					//Очистить количество файлов
 					FileCounts = 0;
 				break;
 
-				//退出控制界面
+				//Выйти из интерфейса управления
 				case BUTTON_CONTROL_BACK:
 				case BUTTON_CNC_CONTROL_BACK:
 					if(MachineSelected == MA_PRINT)
@@ -714,7 +713,7 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//OpenFile按键
+				//Кнопка открытия файла
 				case BUTTON_PRINT_SHOW_FILE:
 				case BUTTON_CNC_SHOW_FILE:
 					//if(card.isFileOpen() == false)
@@ -738,9 +737,9 @@ void HMICommandProcess(void)
 					}			
 				break;
 
-				//移动轴
+				//движущаяся ось
 				case BUTTON_MOVE_AXIS:
-					//电机不在同步中
+					//Двигатель не синхронизирован
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						{
@@ -751,11 +750,11 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//移动轴退出
+				//Переместить ось, выход
 				case BUTTON_MOVE_AXIS_BACK_001:
 				case BUTTON_MOVE_AXIS_BACK_010:
 				case BUTTON_MOVE_AXIS_BACK_100:
-					//电机不在同步中
+					//Двигатель не синхронизирован
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						if(MA_PRINT == MachineSelected)
@@ -767,7 +766,7 @@ void HMICommandProcess(void)
 							HMI_ChangePage(PAGE_CNCCONTROL);
 							if( isLaserMachine(MachineSelected) )
 							{
-								//关闭激光，CNC
+								//Выключить лазер, ЧПУ
 								SetLaserPower(0);
 								LastLaserPwm = 0;
 								digitalWrite(LASER_PORT, LASER_PIN, 0);
@@ -781,7 +780,7 @@ void HMICommandProcess(void)
 				case BUTTON_MOVE_AXIS_HOME_001:
 				case BUTTON_MOVE_AXIS_HOME_010:
 				case BUTTON_MOVE_AXIS_HOME_100:
-					//电机不在同步中
+					//Двигатель не синхронизирован
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						if(MA_PRINT == MachineSelected)
@@ -793,7 +792,7 @@ void HMICommandProcess(void)
 							HMI_ChangePage(PAGE_CNC);
 							if( isLaserMachine(MachineSelected) )
 							{
-								//关闭激光，CNC
+								//Выключить лазер, ЧПУ
 								SetLaserPower(0);
 								LastLaserPwm = 0;
 							}
@@ -808,7 +807,7 @@ void HMICommandProcess(void)
 					}
 				break;
 				
-				//负方向移动
+				//Двигайтесь в отрицательном направлении
 				case BUTTON_XL_01:
 					relative_mode = true;
 					strcpy(tmpBuff, "G0 X-0.1 F3000");
@@ -890,7 +889,7 @@ void HMICommandProcess(void)
 					relative_mode = false;
 				break;
 
-				//正方向移动
+				//движение в положительном направлении
 				case BUTTON_XR_01:
 					relative_mode = true;
 					strcpy(tmpBuff, "G0 X0.1 F3000");
@@ -972,7 +971,7 @@ void HMICommandProcess(void)
 					relative_mode = false;
 				break;
 
-				//控制
+				//контроль
 				case BUTTON_CONTROLL:
 					//if(card.isFileOpen() == false)
 					if(GetCurrentPrinterStatus() == STAT_IDLE)
@@ -981,7 +980,7 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//设置
+				//настраивать
 				case BUTTON_SETTING:
 					//if(card.isFileOpen() == false)
 					if(GetCurrentPrinterStatus() == STAT_IDLE)
@@ -994,7 +993,7 @@ void HMICommandProcess(void)
 					HMI_ChangePage(PAGE_PRINT);
 				break;
 
-				//Z Offset
+				//Со смещением
 				case BUTTON_ZOFFSET_SETUP:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
@@ -1005,7 +1004,7 @@ void HMICommandProcess(void)
 						gcode_G28();
 						st_synchronize();
 
-						//失效调平补尝
+						//Компенсация неудачного выравнивания
 						mbl.active = false;
 
 						strcpy(tmpBuff, "G0 Z0 F1000");
@@ -1013,14 +1012,14 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//设置海平面点的坐标
+						//Установите координаты точки уровня моря
 						sprintf(tmpBuff, "G92 Z%0.4f", -home_offset[Z_AXIS]);
 						current_command_args = tmpBuff;
 						gcode_G92();
-						//相对模式
+						//Относительный режим
 						relative_mode = true;
 
-						//初始化之后为基准点
+						//После инициализации это точка отсчета
 						PointIndex = 2;
 						
 						HMICommandSave = 1;
@@ -1054,7 +1053,7 @@ void HMICommandProcess(void)
 
 						HMI_ChangePage(PAGE_PRINT); 
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
@@ -1081,7 +1080,7 @@ void HMICommandProcess(void)
 
 						HMI_ChangePage(PAGE_SETTING); 
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
@@ -1092,22 +1091,22 @@ void HMICommandProcess(void)
 				case BUTTON_ZOFFSET_CONFIRM:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//切换等待界面
+						//Интерфейс ожидания переключения
 						HMI_ChangePage(PAGE_ZCENTER);
 
-						//P1
+						//П1
 						mbl.set_z(0, 1, MeshPointZ[2]);
 
-						//P2
+						//П2
 						mbl.set_z(1, 1, MeshPointZ[3]);
 						
-						//P3
+						//Продавать
 						mbl.set_z(1, 0, MeshPointZ[1]);
 
 						//P4
 						mbl.set_z(0, 0, MeshPointZ[0]);
 
-						//设置Zoffset
+						//Установить zoffset
 						float X, Y;
 						X = (MESH_MAX_X + MESH_MIN_X) / 2.0f;
 						Y = (MESH_MAX_Y + MESH_MIN_Y) / 2.0f;
@@ -1117,36 +1116,36 @@ void HMICommandProcess(void)
 						current_command_args = tmpBuff;
 						gcode_M206();
 
-						//P1
+						//П1
 						mbl.set_z(0, 1, MeshPointZ[2] - DelZ);
 
-						//P2
+						//П2
 						mbl.set_z(1, 1, MeshPointZ[3] - DelZ);
 						
-						//P3
+						//Продавать
 						mbl.set_z(1, 0, MeshPointZ[1] - DelZ);
 
 						//P4
 						mbl.set_z(0, 0, MeshPointZ[0] - DelZ);
 
-						//回原点
+						//начало вращения
 						mbl.active = true;
 						strcpy(tmpBuff, "G28");
 						current_command_args = tmpBuff;
 						gcode_G28();
 
-						//保存数据
+						//сохранить данные
 						Config_StoreSettings();
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 
-						//Z  轴走到0
+						//Ось Z переходит в 0
 						strcpy(tmpBuff, "G0 Z0"); 
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换主界面
+						//Переключить основной интерфейс
 						HMI_ChangePage(PAGE_PRINT);
 					}
 				break;
@@ -1170,7 +1169,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_UP_005:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.05");
 						current_command_args = tmpBuff;
@@ -1183,7 +1182,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_UP_020:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.2");
 						current_command_args = tmpBuff;
@@ -1196,7 +1195,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_UP_050:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.5");
 						current_command_args = tmpBuff;
@@ -1209,7 +1208,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_DOWN_005:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.05");
 						current_command_args = tmpBuff;
@@ -1222,7 +1221,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_DOWN_020:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.2");
 						current_command_args = tmpBuff;
@@ -1235,7 +1234,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_DOWN_050:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.5");
 						current_command_args = tmpBuff;
@@ -1245,14 +1244,14 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//重置调平参数
+				//Сбросить параметры выравнивания
 				case BUTTON_CALIBRATE1_RESET:
 				case BUTTON_CALIBRATE2_RESET:
 				case BUTTON_CALIBRATE3_RESET:
 					HMI_ChangePage(PAGE_RESETCALIBRATE);
 				break;
 
-				//确定重置调平参数
+				//Подтвердите сброс параметров выравнивания
 				case BUTTON_CALIBRATE_RESET_CONFIRM:
 					HMI_ChangePage(PAGE_WAITHOME);
 					home_offset[Z_AXIS] = -8;
@@ -1263,12 +1262,12 @@ void HMICommandProcess(void)
 					current_command_args = tmpBuff;
 					gcode_G28();
 					st_synchronize();
-					//失效调平补尝
+					//Компенсация неудачного выравнивания
 					mbl.active = false;
-					//绝对坐标模式
+					//Режим абсолютных координат
 					relative_mode = false;
 
-					//回到0  点
+					//Назад к 0 часам
 					strcpy(tmpBuff, "G0 Z0 F1000");
 					current_command_args = tmpBuff;
 					gcode_G0_G1(0);
@@ -1280,10 +1279,10 @@ void HMICommandProcess(void)
 					
 					HMI_ChangePage(PAGE_CALIBRATE1);
 
-					//相对坐标模式
+					//Режим относительных координат
 					relative_mode = true;
 
-					//初始化之后为基准点
+					//После инициализации это точка отсчета
 					PointIndex = 2;
 					
 					HMICommandSave = 1;
@@ -1297,7 +1296,7 @@ void HMICommandProcess(void)
 					HMI_ChangePage(PAGE_CALIBRATE1);
 				break;
 
-				//取消重置调平参数
+				//Отменить сброс параметров выравнивания
 				case BUTTON_CALIBRATE_RESET_BACK:
 					HMI_ChangePage(PAGE_CALIBRATE1);
 				break;
@@ -1308,16 +1307,16 @@ void HMICommandProcess(void)
 				case BUTTON_ZOFFSET_P1:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MIN_X;
 						Y = MESH_MAX_Y;
@@ -1326,17 +1325,17 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[2]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = false;
 						
-						//对应M421 S2
+						//Совместим с M421 S2.
 						PointIndex = 2;
 					}
 				break;
@@ -1347,17 +1346,17 @@ void HMICommandProcess(void)
 				case BUTTON_ZOFFSET_P2:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MAX_X;
 						Y = MESH_MAX_Y;
@@ -1366,15 +1365,15 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[3]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = true;
-						//对应M421 S3
+						//Совместим с M421 S3.
 						PointIndex = 3;
 					}
 				break;
@@ -1385,17 +1384,17 @@ void HMICommandProcess(void)
 				case BUTTON_ZOFFSET_P3:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MAX_X;
 						Y = MESH_MIN_Y;
@@ -1404,15 +1403,15 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[1]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = true;
-						//对应M421 S1
+						//Соответствует M421 S1
 						PointIndex = 1;
 					}
 				break;
@@ -1423,17 +1422,17 @@ void HMICommandProcess(void)
 				case BUTTON_ZOFFSET_P4:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MIN_X;
 						Y = MESH_MIN_Y;
@@ -1442,36 +1441,36 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[0]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = true;
-						//对应M421 S0
+						//Соответствует M421 S0
 						PointIndex = 0;
 					}
 				break;
 
-				//停止打印
+				//Остановить печать
 				case BUTTON_STOP_PRINT:
-					//SD  卡打印中
+					//Печать SD-карты
 					//if(card.isFileOpen() == true)
 					if(GetCurrentPrinterStatus() == STAT_PRINTING)
 					{
-						//切换到停止界面
+						//Переключиться на остановку интерфейса
 						HMI_ChangePage(PAGE_CONFIRMSTOP);
 					}
 				break;
 				
-				//停止打印确认
+				//Остановить печать подтверждения
 				case BUTTON_STOP_PRINT_CONFIRM:
-					//该按钮只在停止工作界面中有效
-					//if(CurrentHMIPage == PAGE_CONFIRMSTOP)
+					//Эта кнопка действительна только в интерфейсе остановки работы.
+					//если (ТекущийHMIPage == PAGE_CONFIRMSTOP)
 					{
-						//脱机打印
+						//Оффлайн печать
 						if(card.isFileOpen() == true)
 						{
 						    card.sdprinting = false;
@@ -1481,10 +1480,10 @@ void HMICommandProcess(void)
 							cancel_heatup = true;
 							StopTriggle(ManualStop);
 							HMI_ChangePage(PAGE_PROCESSING);
-							//禁能断电检测
+							//Отключено обнаружение отключения электроэнергии
 							DisablePowerPanicCheck();
 						}
-						//联机打印
+						//Распечатать онлайн
 						else if(GetCurrentPrinterStatus() == STAT_PRINTING)
 						{
 							if(MA_CNC != MachineSelected)
@@ -1492,16 +1491,16 @@ void HMICommandProcess(void)
 							cancel_heatup = true;
 							StopTriggle(ManualStop);
 							HMI_ChangePage(PAGE_PROCESSING);
-							//禁能断电检测
+							//Отключено обнаружение отключения электроэнергии
 							DisablePowerPanicCheck();
 						}
 					}
 				break;
 
-				//停止打印取消
+				//Остановить печать Отмена
 				case BUTTON_STOP_PRINT_CANCEL:
-					//该按钮只在停止工作界面中有效
-					//if(CurrentHMIPage == PAGE_CONFIRMSTOP)
+					//Эта кнопка действительна только в интерфейсе остановки работы.
+					//если (ТекущийHMIPage == PAGE_CONFIRMSTOP)
 					{
 						if(MachineSelected == MA_PRINT)
 						{
@@ -1514,9 +1513,9 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//暂停打印
+				//Приостановить печать
 				case BUTTON_PAUSE_PRINT:
-					//文件已打开
+					//Файл открыт
 					if(card.isFileOpen() == true)
 					{
 						PauseTriggle(ManualPause);
@@ -1524,9 +1523,9 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//继续打印
+				//Продолжить печать
 				case BUTTON_CONTINUE_PRINT:
-					//文件已打开
+					//Файл открыт
 					if(card.isFileOpen() == true)
 					{
 						if(GetCurrentPrinterStatus() ==  STAT_PAUSE)
@@ -1537,19 +1536,19 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//CNC 
+				//ЧПУ 
 				case BUTTON_CNC_PAUSE:
-					//U  盘打印
+					//Печать на USB-диске
 					if(card.isFileOpen() == true)
 					{
-						//关闭检测
+						//Отключить обнаружение
 						DisableDoorCheck();
 						PauseTriggle(ManualPause); 
 						current_block = NULL;
-						//block_buffer_head = block_buffer_tail = 0;
-						//激光关闭
+						//блок_буфер_хед = блок_буфер_хвост = 0;
+						//лазер выключен
 						SetLaserPower(0);
-						//开启检测
+						//Включить обнаружение
 						if(isLaserMachine(MachineSelected))
 							EnableDoorCheck();
 					}
@@ -1558,18 +1557,18 @@ void HMICommandProcess(void)
 				case BUTTON_CNC_RUN:
 					//if(card.isFileOpen() == true)
 					{
-						//CNC  功能
+						//Функция ЧПУ
 						if(MachineSelected == MA_CNC)
 						{
 							if(GetCurrentPrinterStatus() ==  STAT_PAUSE)
 								PauseResume();
 						}
-						//激光功能
+						//Функция лазера
 						else
 						{
 							if(GetCurrentPrinterStatus() ==  STAT_PAUSE)
 							{
-									//关闭检测
+									//Отключить обнаружение
 									//DisableDoorCheck();
 									if(DoorCheckEnable == false)
 									{
@@ -1582,7 +1581,7 @@ void HMICommandProcess(void)
 											PauseResume();
 										}
 									}
-									//开启检测
+									//Включить обнаружение
 									EnableDoorCheck();
 							}
 							else
@@ -1592,7 +1591,7 @@ void HMICommandProcess(void)
 				break;
 
 				case BUTTON_CNC_STOP:
-					//打印中
+					//Печать
 					if((GetCurrentPrinterStatus() == STAT_PRINTING) || (GetCurrentPrinterStatus() == STAT_PAUSE))
 					//if(card.isFileOpen() == true)
 					{
@@ -1636,7 +1635,7 @@ void HMICommandProcess(void)
 					tick = millis();
 					while(millis() < (tick + 800));
 					HMI_ChangePage(PAGE_CNCCONTROL);
-					//设置原点之后，保持电流
+					//После установки начала координат удерживайте текущую
 					StepperKeepCurrent = true;
 					enable_x();
 					enable_y();
@@ -1652,37 +1651,37 @@ void HMICommandProcess(void)
 					HMI_ChangePage(PAGE_MOVE100);
 				break;
 
-				//FAQ
+				//Часто задаваемые вопросы
 				case BUTTON_FAQ:
 					HMI_ChangePage(PAGE_FAQ);
 				break;
 
-				//FAQ  返回
+				//Часто задаваемые вопросы Возврат
 				case BUTTON_FAQ_BACK:
 					HMI_ChangePage(PAGE_SETTING);
 				break;
 
-				//FAQ  回主页
+				//Часто задаваемые вопросы Вернуться на главную страницу
 				case BUTTON_FAQ_HOME:
 					HMI_ChangePage(PAGE_PRINT);
 				break;
 
-				//About
+				//О
 				case BUTTON_ABOUT:
 					HMI_ChangePage(PAGE_ABOUT);
 				break;
 
-				//About  界面返回
+				//О возвратах интерфейса
 				case BUTTON_ABOUT_BACK:
 					HMI_ChangePage(PAGE_SETTING);
 				break;
 
-				//About  界面回主页
+				//Об интерфейсе возвращается на главную страницу
 				case BUTTON_ABOUT_HOME:
 					HMI_ChangePage(PAGE_PRINT);
 				break;
 
-				//About  界面升级屏幕
+				//Об экране обновления интерфейса
 				case BUTTON_ABOUT_UPDATE:
 					HMI_SendScreenUpdate();
 				break;
@@ -1693,7 +1692,7 @@ void HMICommandProcess(void)
 				break;
 			}
 		}
-		//界面初始化
+		//Инициализация интерфейса
 		else if(eventId == 2)
 		{
 			ID = (uint16_t)tmpBuff[3];
@@ -1702,7 +1701,7 @@ void HMICommandProcess(void)
 			//uint8_t tmpPage;
 			//tmpPage = CurrentHMIPage;
 			CurrentHMIPage = 0xff;
-			//获取界面ID
+			//Получить идентификатор интерфейса
 			for(i=0;i<sizeof(PageID);i++)
 			{
 				if(ID == PageID[i])
@@ -1712,50 +1711,50 @@ void HMICommandProcess(void)
 				}
 			}
 
-			//保存最后界面ID
+			//Сохраните последний идентификатор интерфейса
 			switch(CurrentHMIPage)
 			{
 				case PAGE_PRINT:
-					//SD  打印
+					//SD-печать
 					if(card.isFileOpen()== true)
 					{
 						HMI_StopEnable(true);
 						HMI_SetControlEnable(false);
 						HMI_SetSettingEnable(false);
-						//本次检测被拔出来
+						//Этот тест был удален
 						if(!(IS_UDISK_INSERTED))
 						{
-							//设置图标
+							//значок настроек
 							HMI_SetTFIcon(false);
 						}
 						else
 						{
-							//设置图标
+							//значок настроек
 							HMI_SetTFIcon(true);
 						}
-						//正在打印
+						//Печать
 						if(card.sdprinting == true)
 						{
 							HMI_ChangePrinterStatus(1);
 						}
-						//暂停打印
+						//Приостановить печать
 						else
 						{
 							HMI_ChangePrinterStatus(2);
 						}
 					}
-					//没有SD  打印
+					//Нет SD-печати
 					else
 					{
-						//本次检测被拔出来
+						//Этот тест был удален
 						if(!(IS_UDISK_INSERTED))
 						{
-							//设置图标
+							//значок настроек
 							HMI_SetTFIcon(false);
 						}
 						else
 						{
-							//设置图标
+							//значок настроек
 							HMI_SetTFIcon(true);
 						}
 					}
@@ -1769,7 +1768,7 @@ void HMICommandProcess(void)
 				break;
 
 				case PAGE_CNC:
-					//SD  打印
+					//SD-печать
 					if(card.isFileOpen()== true)
 					{
 						HMI_StopEnable(true);
@@ -1779,19 +1778,19 @@ void HMICommandProcess(void)
 					}
 					else
 					{
-						//本次检测被拔出来
+						//Этот тест был удален
 						if(!(IS_UDISK_INSERTED))
 						{
-							//设置图标
+							//значок настроек
 							HMI_SetTFIcon(false);
 						}
 						else
 						{
-							//设置图标
+							//значок настроек
 							HMI_SetTFIcon(true);
 						}
 					}
-					//显示功率
+					//Мощность дисплея
 					HMI_ShowPrintTime();
 					HMI_ShowLaserPower(laserPercent);
 					HMI_ShowPrintFileName(CardFileNameSelected);
@@ -1799,7 +1798,7 @@ void HMICommandProcess(void)
 				break;
 				
 				case PAGE_FILELIST:
-					//文件选择对话框初始化
+					//Инициализация диалога выбора файла
 					if(FileCounts == 0)
 					{
 						if(card.cardOK)
@@ -1816,17 +1815,17 @@ void HMICommandProcess(void)
 						SeekFileCount = FILE_PER_PAGE;
 					else
 						SeekFileCount = FileCounts;
-					//清空列表
+					//Очистить список
 					for(i=0;i<FILE_PER_PAGE;i++)
 					{
 						CardFileName[i][0] = 0;
 						PrintFileName[i][0] = 0;
 					}
-					//显示文件个数与查找个数相同
+					//Количество отображаемых файлов совпадает с количеством искомых файлов.
 					ShowFileCount = FILE_PER_PAGE;
-					//标识需要查找文件
+					//Определяет файл, который нужно найти
 					SeekingFile = 1;
-					//显示文件索引从0开始
+					//Индекс файла отображения начинается с 0
 					ShowFileIndex = 0;		
 				break;
 
@@ -1864,7 +1863,7 @@ void HMICommandProcess(void)
 
 			}
 		}
-		//查询页面
+		//Страница запроса
 		else if(eventId == 3)
 		{
 			ID = (uint16_t)tmpBuff[3];
@@ -1872,7 +1871,7 @@ void HMICommandProcess(void)
 			uint8_t tmpPage;
 			tmpPage = CurrentHMIPage;
 			CurrentHMIPage = 0xff;
-			//获取界面ID
+			//Получить идентификатор интерфейса
 			for(i=0;i<sizeof(PageID);i++)
 			{
 				if(ID == PageID[i])
@@ -1882,7 +1881,7 @@ void HMICommandProcess(void)
 				}
 			}
 
-			//屏幕热插拔
+			//Горячая замена экрана
 			if(CurrentHMIPage == PAGE_LOGO)
 			{
 				switch(tmpPage)
@@ -1906,14 +1905,14 @@ void HMICommandProcess(void)
 	}
 	
 
-	//文件列举中
+	//Список файлов
 	if(SeekingFile == 1)
 	{
-		//需要列举的文件个数大于0，表示还要列举
+		//Число файлов, подлежащих перечислению, больше 0, что указывает на то, что его все еще необходимо перечислить.
 		if(SeekFileCount > 0)
 		{
 			card.getfilename(FileIndex++, NULL, FileFilter);
-			//防止溢出
+			//Предотвратить переполнение
 			card.longFilename[LONG_FILENAME_LENGTH - 1] = 0;
 			if(card.longFilename[0] != 0)
 			{
@@ -1931,40 +1930,40 @@ void HMICommandProcess(void)
 			}
 			CardFileName[ShowFileIndex][j] = 0;
 
-			//防止溢出
+			//Предотвратить переполнение
 			card.filename[FILENAME_LENGTH - 1] = 0;
 			for(j=0;j<strlen(card.filename);j++)
 			{
 				PrintFileName[ShowFileIndex][j] = card.filename[j];
 			}
 			PrintFileName[ShowFileIndex][j] = 0;
-			//列举个数减1
+			//Уменьшить количество элементов в списке на 1.
 			SeekFileCount--;
-			//索引加1
+			//Индекс плюс 1
 			ShowFileIndex++;
 		}
-		//不需要列举文件
+		//Нет необходимости перечислять файлы
 		else
 		{
-			//清除文件列举中标置
+			//Очистить настройки из перечисления файлов
 			SeekingFile = 0;
-			//显示文件索引从0开始
+			//Индекс файла отображения начинается с 0
 			ShowFileIndex = 0;
 		}
 	}
-	//文件不在列举，显示文件个数大于0，表示有文件需要显示
+	//Файлы больше не отображаются в списке, а количество отображаемых файлов больше 0, что указывает на наличие файлов, которые необходимо отобразить.
 	else if(ShowFileCount > 0)
 	{
 		HMI_ShowFileName(ShowFileIndex, CardFileName[ShowFileIndex]);
-		//显示个数减1
+		//Номер дисплея минус 1
 		ShowFileCount--;
-		//显示索引加1
+		//Индекс отображения увеличен на 1.
 		ShowFileIndex++;
 	}
 }
 #else
 
-//清除串口数据
+//Очистить данные последовательного порта
 void HMI_BuffFlush(void)
 {
 	ReadHead = ReadTail = 0;
@@ -1987,22 +1986,22 @@ void HMICommandProcess(void)
 	if(i == (short)-1)
 	{
 		/*
-		if((millis() - CheckComTick) > 1000)
+		if((millis() -CheckComTick) > 1000)
 		{
-			CheckComTick = millis();
+			CheckComTick = миллис();
 			HMI_GetCurrentPage();
-			if(NoComCount < 10)
-				NoComCount++;
+			если (НоКомКаунт < 10)
+				НоКомКаунт++;
 		}
 		*/
 	}
-	//屏幕协议
+	//протокол экрана
 	else
 	{
 		cmdLen = (tmpBuff[2] << 8) | tmpBuff[3];
 		
 		eventId = tmpBuff[8];
-		//按钮
+		//кнопка
 		if(eventId == 9)
 		{
 			ID = (uint16_t)(tmpBuff[9] << 8) | (uint8_t)tmpBuff[10];
@@ -2011,7 +2010,7 @@ void HMICommandProcess(void)
 			switch((uint16_t)ID)
 			{
 				case BUTTON_MOTOR_HOME:
-					//电机不在同步中
+					//Двигатель не синхронизирован
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						HMI_ChangePage(8);
@@ -2024,7 +2023,7 @@ void HMICommandProcess(void)
 				break;
 
 				case BUTTON_MOVE_AXIS_BACK_010:
-					//电机不在同步中
+					//Двигатель не синхронизирован
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						if(MA_PRINT == MachineSelected)
@@ -2036,7 +2035,7 @@ void HMICommandProcess(void)
 							HMI_ChangePage(PAGE_CNCCONTROL);
 							if( isLaserMachine(MachineSelected) )
 							{
-								//关闭激光，CNC
+								//Выключить лазер, ЧПУ
 								SetLaserPower(0);
 								digitalWrite(LASER_PORT, LASER_PIN, 0);
 							}
@@ -2048,7 +2047,7 @@ void HMICommandProcess(void)
 
 				
 				
-				//Z Offset
+				//Со смещением
 				case BUTTON_ZOFFSET_SETUP:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
@@ -2061,7 +2060,7 @@ void HMICommandProcess(void)
 
 						mbl.active = false;
 
-						//绝对坐标模式
+						//Режим абсолютных координат
 						relative_mode = false;
 
 						sprintf(tmpBuff, "G0 X%0.2f Y%0.2f", home_offset[X_AXIS], home_offset[Y_AXIS]);
@@ -2074,7 +2073,7 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//设置海平面点的坐标
+						//Установите координаты точки уровня моря
 						sprintf(tmpBuff, "G92 Z%0.2f", -home_offset[Z_AXIS]);
 						current_command_args = tmpBuff;
 						gcode_G92();
@@ -2083,7 +2082,7 @@ void HMICommandProcess(void)
 
 						relative_mode = true;
 
-						//初始化之后为基准点
+						//После инициализации это точка отсчета
 						PointIndex = 2;
 						
 						HMICommandSave = 1;
@@ -2116,7 +2115,7 @@ void HMICommandProcess(void)
 
 						HMI_ChangePage(PAGE_PRINT); 
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
@@ -2142,7 +2141,7 @@ void HMICommandProcess(void)
 
 						HMI_ChangePage(PAGE_SETTING); 
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
@@ -2154,22 +2153,22 @@ void HMICommandProcess(void)
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						MeshPointZ[PointIndex] = current_position[Z_AXIS];
-						//切换等待界面
+						//Интерфейс ожидания переключения
 						HMI_ChangePage(PAGE_ZCENTER);
 
-						//P1
+						//П1
 						mbl.set_z(0, 1, MeshPointZ[2]);
 
-						//P2
+						//П2
 						mbl.set_z(1, 1, MeshPointZ[3]);
 						
-						//P3
+						//Продавать
 						mbl.set_z(1, 0, MeshPointZ[1]);
 
 						//P4
 						mbl.set_z(0, 0, MeshPointZ[0]);
 
-						//设置Zoffset
+						//Установить zoffset
 						float X, Y;
 						X = (MESH_MAX_X + MESH_MIN_X) / 2.0f;
 						Y = (MESH_MAX_Y + MESH_MIN_Y) / 2.0f;
@@ -2179,33 +2178,33 @@ void HMICommandProcess(void)
 						current_command_args = tmpBuff;
 						gcode_M206();
 
-						//P1
+						//П1
 						mbl.set_z(0, 1, MeshPointZ[2] - DelZ);
 
-						//P2
+						//П2
 						mbl.set_z(1, 1, MeshPointZ[3] - DelZ);
 						
-						//P3
+						//Продавать
 						mbl.set_z(1, 0, MeshPointZ[1] - DelZ);
 
 						//P4
 						mbl.set_z(0, 0, MeshPointZ[0] - DelZ);
 
-						//回原点
+						//начало вращения
 						strcpy(tmpBuff, "G28");
 						current_command_args = tmpBuff;
 						gcode_G28();
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//切换主界面
+						//Переключить основной интерфейс
 						HMI_ChangePage(PAGE_PRINT);
 
-						//保存数据
+						//сохранить данные
 						Config_StoreSettings();
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
@@ -2229,7 +2228,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_UP_005:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.05");
 						current_command_args = tmpBuff;
@@ -2242,7 +2241,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_UP_020:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.2");
 						current_command_args = tmpBuff;
@@ -2255,7 +2254,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_UP_050:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.5");
 						current_command_args = tmpBuff;
@@ -2268,7 +2267,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_DOWN_005:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.05");
 						current_command_args = tmpBuff;
@@ -2281,7 +2280,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_DOWN_020:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.2");
 						current_command_args = tmpBuff;
@@ -2294,7 +2293,7 @@ void HMICommandProcess(void)
 				case BUTTON_CALIBRATE_DOWN_050:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.5");
 						current_command_args = tmpBuff;
@@ -2304,14 +2303,14 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//重置调平参数
+				//Сбросить параметры выравнивания
 				case BUTTON_CALIBRATE1_RESET:
 				case BUTTON_CALIBRATE2_RESET:
 				case BUTTON_CALIBRATE3_RESET:
 					HMI_ChangePage(PAGE_RESETCALIBRATE);
 				break;
 
-				//确定重置调平参数
+				//Подтвердите сброс параметров выравнивания
 				case BUTTON_CALIBRATE_RESET_CONFIRM:
 					HMI_ChangePage(PAGE_WAITHOME);
 					home_offset[Z_AXIS] = -8;
@@ -2331,7 +2330,7 @@ void HMICommandProcess(void)
 
 					relative_mode = true;
 
-					//初始化之后为基准点
+					//После инициализации это точка отсчета
 					PointIndex = 2;
 					
 					HMICommandSave = 1;
@@ -2341,12 +2340,12 @@ void HMICommandProcess(void)
 					MeshPointZ[2] = -home_offset[Z_AXIS];
 					MeshPointZ[3] = -home_offset[Z_AXIS];
 					
-					//失效调平补尝
+					//Компенсация неудачного выравнивания
 					mbl.active = false;
 					HMI_ChangePage(PAGE_CALIBRATE1);
 				break;
 
-				//取消重置调平参数
+				//Отменить сброс параметров выравнивания
 				case BUTTON_CALIBRATE_RESET_BACK:
 					HMI_ChangePage(PAGE_CALIBRATE1);
 				break;
@@ -2358,16 +2357,16 @@ void HMICommandProcess(void)
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						MeshPointZ[PointIndex] = current_position[Z_AXIS];
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MIN_X;
 						Y = MESH_MAX_Y;
@@ -2376,17 +2375,17 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[2]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = false;
 						
-						//对应M421 S2
+						//Совместим с M421 S2.
 						PointIndex = 2;
 					}
 				break;
@@ -2398,17 +2397,17 @@ void HMICommandProcess(void)
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						MeshPointZ[PointIndex] = current_position[Z_AXIS];
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MAX_X;
 						Y = MESH_MAX_Y;
@@ -2417,15 +2416,15 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[3]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = true;
-						//对应M421 S3
+						//Совместим с M421 S3.
 						PointIndex = 3;
 					}
 				break;
@@ -2437,17 +2436,17 @@ void HMICommandProcess(void)
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						MeshPointZ[PointIndex] = current_position[Z_AXIS];
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MAX_X;
 						Y = MESH_MIN_Y;
@@ -2456,15 +2455,15 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[1]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = true;
-						//对应M421 S1
+						//Соответствует M421 S1
 						PointIndex = 1;
 					}
 				break;
@@ -2476,17 +2475,17 @@ void HMICommandProcess(void)
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
 						MeshPointZ[PointIndex] = current_position[Z_AXIS];
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
-						//向上走2  MM
+						//Поднимитесь на 2 мм
 						strcpy(tmpBuff, "G0 Z2.0 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
 						
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//向到调整点位置
+						//в положение точки регулировки
 						int X, Y;
 						X = MESH_MIN_X;
 						Y = MESH_MIN_Y;
@@ -2495,25 +2494,25 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						st_synchronize();
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 						sprintf(tmpBuff, "G0 Z%0.2f", MeshPointZ[0]);
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//切换到相对位置模式
+						//Переключиться в режим относительного положения
 						relative_mode = true;
-						//对应M421 S0
+						//Соответствует M421 S0
 						PointIndex = 0;
 					}
 				break;
 				
-				//停止打印确认
+				//Остановить печать подтверждения
 				case BUTTON_STOP_PRINT_CONFIRM:
-					//该按钮只在停止工作界面中有效
-					//if(CurrentHMIPage == PAGE_CONFIRMSTOP)
+					//Эта кнопка действительна только в интерфейсе остановки работы.
+					//если (ТекущийHMIPage == PAGE_CONFIRMSTOP)
 					{
-						//脱机打印
+						//Оффлайн печать
 						CurStatus = GetCurrentPrinterStatus();
 						if((CurStatus == STAT_PRINTING) || (CurStatus == STAT_PAUSE))
 						{
@@ -2524,12 +2523,12 @@ void HMICommandProcess(void)
 							cancel_heatup = true;
 							StopTriggle(ManualStop);
 							HMI_ChangePage(PAGE_PROCESSING);
-							//禁能断电检测
+							//Отключено обнаружение отключения электроэнергии
 							DisablePowerPanicCheck();
 							if(MA_LASER == MachineSelected)
 								DisableDoorCheck();
 						}
-						//联机打印
+						//Распечатать онлайн
 						else if((CurStatus == STAT_PRINTING_ONLINE) || (CurStatus == STAT_PAUSE_ONLINE))
 						{
 							if(MA_CNC != MachineSelected)
@@ -2537,7 +2536,7 @@ void HMICommandProcess(void)
 							cancel_heatup = true;
 							StopTriggle(ManualStop);
 							HMI_ChangePage(PAGE_PROCESSING);
-							//禁能断电检测
+							//Отключено обнаружение отключения электроэнергии
 							DisablePowerPanicCheck();
 							if(MA_LASER == MachineSelected)
 								DisableDoorCheck();
@@ -2546,38 +2545,38 @@ void HMICommandProcess(void)
 				break;
 
 
-				//暂停打印
+				//Приостановить печать
 				case BUTTON_PAUSE_PRINT:
-					//文件已打开
+					//Файл открыт
 					if(GetCurrentPrinterStatus() == STAT_PRINTING)
 					{
 						PauseTriggle(ManualPause);
 					}	
-					//脱机打印
+					//Оффлайн печать
 					else if(GetCurrentPrinterStatus() == STAT_PRINTING_ONLINE)
 					{
 						PauseTriggle(ManualPause);
 					}
 				break;
 
-				//继续打印
+				//Продолжить печать
 				case BUTTON_CONTINUE_PRINT:
-					//U  盘打印
+					//Печать на USB-диске
 					if(GetCurrentPrinterStatus() ==  STAT_PAUSE)
 					{
-						//激光执行头
+						//Лазерная исполнительная головка
 						if(isLaserMachine(MachineSelected) == 1)
 						{
 							#ifdef DOOR_PORT
-							//关闭检测
+							//Отключить обнаружение
 							//DisableDoorCheck();
-							//门已关闭
+							//дверь закрыта
 							if(READ(DOOR_PORT,DOOR_PIN) == false)
 							{
-								//启动打印
+								//Начать печать
 								PauseResume();
 							}
-							//开启检测
+							//Включить обнаружение
 							EnableDoorCheck();
 							#else
 							PauseResume();
@@ -2587,14 +2586,14 @@ void HMICommandProcess(void)
 						{
 							PauseResume();
 						}
-						//清除故障标志
+						//Очистить флаг неисправности
 						SysFaultFlag &= ~FAULT_FLAG_FILAMENT;
 					}
-					//脱机打印
+					//Оффлайн печать
 					else if(GetCurrentPrinterStatus() == STAT_PAUSE_ONLINE)
 					{
 						HMI_SendContinuePrint();
-						//清除故障标志
+						//Очистить флаг неисправности
 						SysFaultFlag &= ~FAULT_FLAG_FILAMENT;
 					}
 				break;
@@ -2629,7 +2628,7 @@ void HMICommandProcess(void)
 					tick = millis();
 					while(millis() < (tick + 800));
 					HMI_ChangePage(PAGE_CNCCONTROL);
-					//设置原点之后，保持电流
+					//После установки начала координат удерживайте текущую
 					StepperKeepCurrent = true;
 					enable_x();
 					enable_y();
@@ -2641,7 +2640,7 @@ void HMICommandProcess(void)
 					SaveLaserFocusZValue(LaserZValue);
 					Config_StoreSettings();
 					HomeAfterReset[Z_AXIS] = false;
-					//关闭激光，CNC
+					//Выключить лазер, ЧПУ
 					SetLaserPower(0);
 					digitalWrite(LASER_PORT, LASER_PIN, 0);
 				break;
@@ -2671,12 +2670,12 @@ void HMICommandProcess(void)
 
 
 				/********************************************
-				以下为测试项，不用时清除
+				Ниже приведены тестовые элементы. Очищайте их, когда они не используются.
 				********************************************/
 				case BUTTON_ZHA_ZOFFSET_SETUP:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//关闭热床和加热头
+						//Выключите нагревательный слой и нагревательную головку.
 						disable_all_heaters();
 						
 						HMI_ChangePage(PAGE_ZCENTER);
@@ -2686,17 +2685,17 @@ void HMICommandProcess(void)
 						while(blocks_queued());
 						mbl.active = false;
 
-						//设置Z  轴最大速度
+						//Установить максимальную скорость оси Z
 						strcpy(tmpBuff, "M203 Z50");
 						current_command_args = tmpBuff;
 						gcode_M203();
 
-						//设置海平面点的坐标
+						//Установите координаты точки уровня моря
 						current_position[Z_AXIS] = base_max_pos[Z_AXIS];
 						sync_plan_position();
 
-						//第1  点
-						//绝对坐标模式
+						//Пункт 1
+						//Режим абсолютных координат
 						relative_mode = false;
 						strcpy(tmpBuff, "G0 Z13 F2000");
 						current_command_args = tmpBuff;
@@ -2711,7 +2710,7 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						while(blocks_queued());
 
-						//相对坐标模式
+						//Режим относительных координат
 						relative_mode = true;
 						HalfAutoCalibrateState = 1;
 						strcpy(tmpBuff, "G0 Z-20 F70");
@@ -2723,8 +2722,8 @@ void HMICommandProcess(void)
 						HalfAutoCalibrateState = 0;
 						sync_plan_position();
 
-						//第2  点
-						//绝对坐标模式
+						//Пункт 2
+						//Режим абсолютных координат
 						relative_mode = false;
 						strcpy(tmpBuff, "G0 Z13 F2000");
 						current_command_args = tmpBuff;
@@ -2738,7 +2737,7 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						while(blocks_queued());
 
-						//相对坐标模式
+						//Режим относительных координат
 						relative_mode = true;
 						HalfAutoCalibrateState = 1;
 						strcpy(tmpBuff, "G0 Z-20 F70");
@@ -2750,8 +2749,8 @@ void HMICommandProcess(void)
 						HalfAutoCalibrateState = 0;
 						sync_plan_position();
 
-						//第3  点
-						//绝对坐标模式
+						//Пункт 3
+						//Режим абсолютных координат
 						relative_mode = false;
 						strcpy(tmpBuff, "G0 Z13 F2000");
 						current_command_args = tmpBuff;
@@ -2765,7 +2764,7 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						while(blocks_queued());
 
-						//相对坐标模式
+						//Режим относительных координат
 						relative_mode = true;
 						HalfAutoCalibrateState = 1;
 						strcpy(tmpBuff, "G0 Z-20 F70");
@@ -2777,8 +2776,8 @@ void HMICommandProcess(void)
 						HalfAutoCalibrateState = 0;
 						sync_plan_position();
 
-						//第4  点
-						//绝对坐标模式
+						//Пункт 4
+						//Режим абсолютных координат
 						relative_mode = false;
 						strcpy(tmpBuff, "G0 Z13 F2000");
 						current_command_args = tmpBuff;
@@ -2792,7 +2791,7 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						while(blocks_queued());
 
-						//相对坐标模式
+						//Режим относительных координат
 						relative_mode = true;
 						HalfAutoCalibrateState = 1;
 						strcpy(tmpBuff, "G0 Z-20 F70");
@@ -2804,7 +2803,7 @@ void HMICommandProcess(void)
 						HalfAutoCalibrateState = 0;
 						sync_plan_position();
 
-						//中心点
+						//центральная точка
 						relative_mode = false;
 						strcpy(tmpBuff, "G0 Z13 F2000");
 						current_command_args = tmpBuff;
@@ -2818,7 +2817,7 @@ void HMICommandProcess(void)
 						gcode_G0_G1(0);
 						while(blocks_queued());
 
-						//相对坐标模式
+						//Режим относительных координат
 						relative_mode = true;
 						HalfAutoCalibrateState = 1;
 						strcpy(tmpBuff, "G0 Z-20 F70");
@@ -2848,7 +2847,7 @@ void HMICommandProcess(void)
 
 						relative_mode = true;
 
-						//设置Z  轴最大速度
+						//Установить максимальную скорость оси Z
 						strcpy(tmpBuff, "M203 Z5");
 						current_command_args = tmpBuff;
 						gcode_M203();
@@ -2862,16 +2861,16 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE3_SAVE:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//切换等待界面
+						//Интерфейс ожидания переключения
 						HMI_ChangePage(PAGE_ZCENTER);
 
-						//P1
+						//П1
 						mbl.set_z(0, 0, MeshPointZ[0] - HalfAutoCalibrateZPosition);
 
-						//P2
+						//П2
 						mbl.set_z(0, 1, MeshPointZ[1] - HalfAutoCalibrateZPosition);
 						
-						//P3
+						//Продавать
 						mbl.set_z(1, 0, MeshPointZ[2] - HalfAutoCalibrateZPosition);
 
 						//P4
@@ -2881,26 +2880,26 @@ void HMICommandProcess(void)
 						current_command_args = tmpBuff;
 						gcode_M206();
 
-						//回原点
+						//начало вращения
 						strcpy(tmpBuff, "G28");
 						current_command_args = tmpBuff;
 						gcode_G28();
 						while(blocks_queued());
 
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
-						//切换主界面
+						//Переключить основной интерфейс
 						HMI_ChangePage(PAGE_PRINT);
 
-						//保存数据
+						//сохранить данные
 						Config_StoreSettings();
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
 				
-				//重置调平参数
+				//Сбросить параметры выравнивания
 				case BUTTON_ZHA_CALIBRATE1_RESET:
 				case BUTTON_ZHA_CALIBRATE2_RESET:
 				case BUTTON_ZHA_CALIBRATE3_RESET:
@@ -2927,12 +2926,12 @@ void HMICommandProcess(void)
 
 						HMI_ChangePage(PAGE_SETTING); 
 						HMICommandSave = 0;
-						//切换到绝对位置模式
+						//Переключиться в режим абсолютного положения
 						relative_mode = false;
 					}
 				break;
 
-				//确定重置调平参数
+				//Подтвердите сброс параметров выравнивания
 				case BUTTON_CALIBRATE_HA_RESET_CONFIRM:
 					HMI_ChangePage(PAGE_WAITHOME);
 					home_offset[Z_AXIS] = -8;
@@ -2954,12 +2953,12 @@ void HMICommandProcess(void)
 					
 					HMICommandSave = 1;
 					
-					//失效调平补尝
+					//Компенсация неудачного выравнивания
 					mbl.active = false;
 					HMI_ChangePage(PAGE_CALIBRATE_HA1);
 				break;
 
-				//取消重置调平参数
+				//Отменить сброс параметров выравнивания
 				case BUTTON_CALIBRATE_HA_RESET_BACK:
 					HMI_ChangePage(PAGE_CALIBRATE_HA1);
 				break;
@@ -2968,7 +2967,7 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE_UP_050:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.5");
 						current_command_args = tmpBuff;
@@ -2980,7 +2979,7 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE_UP_020:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.2");
 						current_command_args = tmpBuff;
@@ -2992,7 +2991,7 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE_UP_005:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z0.05");
 						current_command_args = tmpBuff;
@@ -3004,7 +3003,7 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE_DOWN_050:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.5");
 						current_command_args = tmpBuff;
@@ -3016,7 +3015,7 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE_DOWN_020:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.2");
 						current_command_args = tmpBuff;
@@ -3028,7 +3027,7 @@ void HMICommandProcess(void)
 				case BUTTON_ZHA_CALIBRATE_DOWN_005:
 					if((StepperSync == false) && (CMD_BUFF_EMPTY() == true))
 					{
-						//相对位置模式
+						//Режим относительного положения
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 Z-0.05");
 						current_command_args = tmpBuff;
@@ -3037,36 +3036,36 @@ void HMICommandProcess(void)
 					}
 				break;
 				/********************************************
-				以上为测试项，不用时清除
+				Вышеуказанные элементы являются тестовыми, очищайте их, когда они не используются.
 				********************************************/
 
-				//获取断点数据
+				//Получить данные точки останова
 				case BUTTON_GET_BREAK_DATA:
 					HMI_SendBreakPointData();
 				break;
 
-				//断点续打
+				//Возобновить работу с точки останова
 				case BUTTON_RESUME_BREAK_PRINT:
 					PowerPanicResumeWork(NULL);
 				break;
 
-				//挤出
+				//Выдавливание
 				case BUTTON_EXTRDE:
 					if(MA_PRINT == MachineSelected)
 					{
-						//相对模式
+						//Относительный режим
 						relative_mode = true;
 						strcpy(tmpBuff, "G0 E5 F600");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						st_synchronize();
-						//绝对模式
+						//Абсолютный режим
 						relative_mode = false;
 						
 					}
 				break;
 
-				//进入激光高度设置
+				//Введите настройки высоты лазера
 				case BUTTON_ENTER_LASER_FOCUS_SETTING:
 					if(MA_LASER == MachineSelected)
 					{
@@ -3091,36 +3090,36 @@ void HMICommandProcess(void)
 			}
 		}
 		
-		//上位指令调试
+		//Отладка инструкций верхнего уровня
 		else if(eventId == 0x01)
 		{
 			ShieldLedOn();
-			//指令尾补0
+			//Заполнение хвоста инструкции с помощью 0
 			j = cmdLen + 12;
 			tmpBuff[j] = 0;
 			Screen_enqueue_and_echo_commands(&tmpBuff[13], 0xffffffff, 0x02);
 		}
-		//GCode  打印
+		//Печать GCode
 		else if(eventId == 0x03)
 		{
 			ShieldLedOn();
 			CurStatus = GetCurrentPrinterStatus();
-			//上位启动打印
+			//Запуск печати с хоста
 			if((CurStatus== STAT_PRINTING_ONLINE) || (CurStatus== STAT_PAUSE_ONLINE))
 			{
-				//激光头
+				//лазерная головка
 				if(isLaserMachine(MachineSelected) == 1)
 				{
-					//行号
+					//Номер строки
 					ID = (tmpBuff[9] << 24) | (tmpBuff[10] << 16) | (tmpBuff[11] << 8) | tmpBuff[12];
-					//指令尾补0
+					//Заполнение хвоста инструкции с помощью 0
 					j = tmpBuff[3] + 8;
 					tmpBuff[j] = 0;
 					
 					#ifdef DOOR_PORT
 					if(DoorCheckEnable == true)
 					{
-						//门已关闭
+						//дверь закрыта
 						if(READ(DOOR_PORT, DOOR_PIN) == false)
 						{
 							Screen_enqueue_and_echo_commands(&tmpBuff[13], ID, 0x04);
@@ -3135,37 +3134,37 @@ void HMICommandProcess(void)
 					Screen_enqueue_and_echo_commands(&tmpBuff[13], ID, 0x04);
 					#endif
 				}
-				//非激光头
+				//Нелазерная головка
 				else
 				{
-					//行号
+					//Номер строки
 					ID = (tmpBuff[9] << 24) | (tmpBuff[10] << 16) | (tmpBuff[11] << 8) | tmpBuff[12];
-					//指令尾补0
+					//Заполнение хвоста инструкции с помощью 0
 					j = tmpBuff[3] + 8;
 					tmpBuff[j] = 0;
 					Screen_enqueue_and_echo_commands(&tmpBuff[13], ID, 0x04);
 				}
 			}
 		}
-		//文件操作
+		//Операции с файлами
 		else if(eventId == 0x05)
 		{
 			ShieldLedOn();
-			//控制字
+			//управляющее слово
 			switch(tmpBuff[9])
 			{
-				//重新挂载
+				//Перемонтировать
 				case 0:
 					card.initsd();
 					if(card.cardOK == true)
 						HMI_SendInitUdisk(0);
 					else
 						HMI_SendInitUdisk(1);
-					//清除项目显示偏移量
+					//Очистить смещение отображения проекта
 					ListFileOffset = 0;
 				break;
 
-				//获取当前目录路径
+				//Получить текущий путь к каталогу
 				case 1:
 					if(card.getWorkDirPath() == true)
 						HMI_SendCurrentUDiskPath(0);
@@ -3173,11 +3172,11 @@ void HMICommandProcess(void)
 						HMI_SendCurrentUDiskPath(1);
 				break;
 
-				//进入目录
+				//Введите каталог
 				case 2:
 					ID = 0;
 					FileListBuff[ID] = 0;
-					//清除项目显示偏移量
+					//Очистить смещение отображения проекта
 					ListFileOffset = 0;
 					if(card.getWorkDirPath() == true)
 					{
@@ -3202,18 +3201,18 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//返回上一级
+				//Вернуться на предыдущий уровень
 				case 3:
 				break;
 
-				//获取当前目录的内容
+				//Получить содержимое текущего каталога
 				case 4:
 					ListFileOffset += HMI_SendDirItems(0, ListFileOffset);
 				break;
 
-				//获取文件特殊内容
+				//Получить специальное содержимое файла
 				case 5:
-					//待机状态下可操作
+					//Работает в режиме ожидания
 					if(GetCurrentPrinterStatus() == STAT_IDLE)
 					{
 						ID = 0;
@@ -3231,10 +3230,10 @@ void HMICommandProcess(void)
 					}
 				break;
 
-				//启动U  盘打印
+				//Начать печать с U-диска
 				case 6:
 					CurStatus = GetCurrentPrinterStatus();
-					//待机状态下可操作
+					//Работает в режиме ожидания
 					if(CurStatus == STAT_IDLE)
 					{
 						ID = 0;
@@ -3249,10 +3248,10 @@ void HMICommandProcess(void)
 							}
 						}
 						card.StartSelectPrint(FileListBuff);
-						//文件打开成功
+						//Файл успешно открыт
 						if(card.isFileOpen() == false)
 						{
-							//发送文件打开失败
+							//Не удалось открыть файл отправки
 							HMI_SendStartPrintReack(1);
 							break;
 						}
@@ -3268,50 +3267,50 @@ void HMICommandProcess(void)
 						PowerPanicData.MachineType = MachineSelected;
 						HMI_SendStartPrintReack(0);
 
-						//激光执行头
+						//Лазерная исполнительная головка
 						if(isLaserMachine(MachineSelected) == 1)
 						{
-							//Z  未知坐标
+							//Z неизвестные координаты
 							if(HomeAfterReset[Z_AXIS] == false)
 							{
-								//Z  轴回原点
+								//Ось Z возвращается в исходное положение
 								strcpy(tmpBuff, "G28 Z");
 								current_command_args = tmpBuff;
 								gcode_G28();
 							}
-							//走到工件坐标
+							//Перейти к координатам заготовки
 							strcpy(tmpBuff, "G0 X0 Y0");
 							current_command_args = tmpBuff;
 							gcode_G0_G1(0);
 							while(blocks_queued());
 						}
-						//使能检测
+						//Включить обнаружение
 						EnablePowerPanicCheck();
 						if(isLaserMachine(MachineSelected) == 1)
 						{
-							//门已关闭
+							//дверь закрыта
 							if(READ(DOOR_PORT, DOOR_PIN) == true)
 							{
 								PauseTriggle(ManualPause);
 								SetCurrentPrinterStatus(STAT_PAUSE);
 							}
 						}
-						//启动门检测
+						//Запустить обнаружение двери
 						if(isLaserMachine(MachineSelected) == 1)
 							EnableDoorCheck();
 					}
 				break;
 			}
 		}
-		//状态上报
+		//Отчеты о состоянии
 		else if(eventId == 0x07)
 		{
 			uint8_t StatuID;
 			block_t *pBlock;
 			StatuID = tmpBuff[9];
-			//获取当前状态
+			//Получить текущий статус
 			CurStatus = GetCurrentPrinterStatus();
-			//暂停
+			//пауза
 			if(StatuID == 0x04)
 			{
 				CurStatus = GetCurrentPrinterStatus();
@@ -3325,26 +3324,26 @@ void HMICommandProcess(void)
 				}
 				PauseTriggle(ManualPause);
 			}
-			//继续
+			//продолжать
 			else if(StatuID == 0x05)
 			{
 				CurStatus = GetCurrentPrinterStatus();
-				//U  盘打印
+				//Печать на USB-диске
 				if(CurStatus ==  STAT_PAUSE)
 				{
-					//激光执行头
+					//Лазерная исполнительная головка
 					if(isLaserMachine(MachineSelected) == 1)
 					{
 						#ifdef DOOR_PORT
-						//关闭检测
+						//Отключить обнаружение
 						//DisableDoorCheck();
-						//门已关闭
+						//дверь закрыта
 						if(READ(DOOR_PORT,DOOR_PIN) == false)
 						{
-							//启动打印
+							//Начать печать
 							PauseResume();
 						}
-						//开启检测
+						//Включить обнаружение
 						EnableDoorCheck();
 						#else
 						PauseResume();
@@ -3354,50 +3353,49 @@ void HMICommandProcess(void)
 					{
 						PauseResume();
 					}
-					//清除故障标志
+					//Очистить флаг неисправности
 					SysFaultFlag &= ~FAULT_FLAG_FILAMENT;
 					HmiRequestStatus = STAT_PRINTING;
-				}
-				//连机打印
+				}//Онлайн-печать
 				else if(CurStatus == STAT_PAUSE_ONLINE)
 				{
 					PauseResume();
-					//清除故障标志
+					//Очистить флаг неисправности
 					SysFaultFlag &= ~FAULT_FLAG_FILAMENT;
 					HmiRequestStatus = STAT_PRINTING_ONLINE;
 					
 				}
 			}
-			//联机打印
+			//Распечатать онлайн
 			else if(StatuID == 0x03)
 			{
-				//待机状态中
+				//В режиме ожидания
 				if(CurStatus == STAT_IDLE)
 				{
-					//设置打印状态
+					//Установить статус печати
 					SetCurrentPrinterStatus(STAT_PRINTING_ONLINE);
-					//打印数据源
+					//Распечатать источник данных
 					PowerPanicData.GCodeSource = GCODE_SOURCE_SCREEN;
 					/*
-					//激光执行头
-					if(isLaserMachine(MachineSelected) == 1)
+					//Лазерная исполнительная головка
+					если (isLaserMachine (MachineSelected) == 1)
 					{
-						//Z  未知坐标
-						if(HomeAfterReset[Z_AXIS] == false)
+						//Z неизвестные координаты
+						если (HomeAfterReset[Z_AXIS] == ложь)
 						{
-							//Z  轴回原点
+							//Ось Z возвращается в исходное положение
 							strcpy(tmpBuff, "G28 Z");
 							current_command_args = tmpBuff;
 							gcode_G28();
 						}
-						//走到工件坐标
+						//Перейти к координатам заготовки
 						strcpy(tmpBuff, "G0 X0 Y0");
 						current_command_args = tmpBuff;
 						gcode_G0_G1(0);
 						while(blocks_queued());
 					}
 					*/
-					//使能检测
+					//Включить обнаружение
 					#if(HAVE_FALIMENT_SENSOR == 1)
 					if(MA_PRINT == MachineSelected)
 						EnableFilamentCheck();
@@ -3405,21 +3403,21 @@ void HMICommandProcess(void)
 					HMI_SendMachineStatusChange(0x03, 0);
 				}
 			}
-			//停止
+			//останавливаться
 			else if(StatuID == 0x06)
 			{
 				if(CurStatus != STAT_IDLE)
 				{
-					//上位机停止分2  种，立即停止
+					//Существует два типа верхней остановки компьютера: немедленная остановка.
 					StopTriggle(ManualStop);
 				}
 			}
-			//请求最近行号
+			//Запросить самый последний номер строки
 			else if(StatuID == 0x07)
 			{
 				HMI_SendBreakPointLine();
 			}
-			//打印结束
+			//Конец печати
 			else if(StatuID == 0x08)
 			{
 				if(CurStatus != STAT_IDLE)
@@ -3427,20 +3425,20 @@ void HMICommandProcess(void)
 					StopTriggle(ManualStop);
 				}
 			}
-			//查询状态
+			//Статус запроса
 			else if(StatuID == 0x01)
 			{
 				HMI_SendMachineStatus();
 			}
 		}
-		//操作指令
+		//Инструкции по эксплуатации
 		else if(eventId == 0x09)
 		{
 			switch(tmpBuff[9])
 			{
-				//移动轴
+				//движущаяся ось
 				case 0x01:
-					//借用缓冲器
+					//буфер займа
 					strcpy(FileListBuff, "G0 ");
 					u32Value = (tmpBuff[10] << 24) | (tmpBuff[11] << 16) | (tmpBuff[12] << 8) | tmpBuff[13];
 					sprintf(&FileListBuff[512], "X%0.2f", (float)u32Value / 1000.0f);
@@ -3458,12 +3456,12 @@ void HMICommandProcess(void)
 					sprintf(&FileListBuff[512], "E%0.2f", (float)u32Value / 1000.0f);
 					strcat(FileListBuff, &FileListBuff[512]);
 
-					//相对位置模式
+					//Режим относительного положения
 					relative_mode = true;
 					current_command_args = FileListBuff;
 					gcode_G0_G1(0);
 					st_synchronize();
-					//绝对位置模式
+					//Режим абсолютного положения
 					relative_mode = false;
 				break;
 			}
@@ -3474,7 +3472,7 @@ void HMICommandProcess(void)
 }
 
 /***********************************************
-回复暂停打印行号
+Ответить Приостановить печать номера строки
 ***********************************************/
 void HMI_SendBreakPointLine()
 {
@@ -3482,35 +3480,35 @@ void HMI_SendBreakPointLine()
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
-	//行号
+	//Номер строки
 	tmpBuff[i++] = 0x07;
 
-	//断点数据
+	//данные точки останова
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 24);
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 16);
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 8);
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition);
 
-	//重填包长
+	//Длина пополняемой упаковки
 	tmpBuff[2] = (uint8_t)((i - 8) >> 8);
 	tmpBuff[3] = (uint8_t)(i - 8);
 	tmpBuff[5] = tmpBuff[2] ^ tmpBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (tmpBuff[j] << 8) | tmpBuff[j + 1];
@@ -3529,7 +3527,7 @@ void HMI_SendBreakPointLine()
 
 
 /***********************************************
-发送断点数据
+Отправить данные точки останова
 ************************************************/
 void HMI_SendBreakPointData()
 {
@@ -3537,23 +3535,23 @@ void HMI_SendBreakPointData()
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x77;
 
-	//断点数据
+	//данные точки останова
 	tmpBuff[i++] = PowerPanicData.Valid;
 	tmpBuff[i++] = PowerPanicData.GCodeSource;
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 24);
@@ -3561,11 +3559,11 @@ void HMI_SendBreakPointData()
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 8);
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition);
 
-	//重填包长
+	//Длина пополняемой упаковки
 	tmpBuff[2] = (uint8_t)((i - 8) >> 8);
 	tmpBuff[3] = (uint8_t)(i - 8);
 	tmpBuff[5] = tmpBuff[2] ^ tmpBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (tmpBuff[j] << 8) | tmpBuff[j + 1];
@@ -3583,7 +3581,7 @@ void HMI_SendBreakPointData()
 }
 
 /***********************************************
-发送报警
+Отправить сигнал тревоги
 ************************************************/
 void HMI_SendMachineFaultFlag()
 {
@@ -3591,33 +3589,33 @@ void HMI_SendMachineFaultFlag()
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
-	//异常上报
+	//Аномальные отчеты
 	tmpBuff[i++] = 0x02;
-	//异常标志
+	//Флаг исключения
 	tmpBuff[i++] = (uint8_t)(SysFaultFlag >> 24);
 	tmpBuff[i++] = (uint8_t)(SysFaultFlag >> 16);
 	tmpBuff[i++] = (uint8_t)(SysFaultFlag >> 8);
 	tmpBuff[i++] = (uint8_t)(SysFaultFlag);
 
-	//打印文件源
+	//Распечатать исходный файл файла
 	tmpBuff[i++] = PowerPanicData.GCodeSource;
 
-	//行号
+	//Номер строки
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 24);
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 16);
 	tmpBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 8);
@@ -3626,7 +3624,7 @@ void HMI_SendMachineFaultFlag()
 	tmpBuff[2] = (uint8_t)((i - 8) >> 8);
 	tmpBuff[3] = (uint8_t)(i - 8);
 	tmpBuff[5] = tmpBuff[2] ^ tmpBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (tmpBuff[j] << 8) | tmpBuff[j + 1];
@@ -3645,7 +3643,7 @@ void HMI_SendMachineFaultFlag()
 
 
 /***********************************************
-发送状态切变
+Отправить изменение статуса
 ************************************************/
 void HMI_SendMachineStatusChange(uint8_t Status, uint8_t Result)
 {
@@ -3653,30 +3651,30 @@ void HMI_SendMachineStatusChange(uint8_t Status, uint8_t Result)
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
-	//目前状态
+	//текущий статус
 	tmpBuff[i++] = Status;
-	//处理结果
+	//Результаты обработки
 	tmpBuff[i++] = Result;
 
 	tmpBuff[2] = (uint8_t)((i - 8) >> 8);
 	tmpBuff[3] = (uint8_t)(i - 8);
 	tmpBuff[5] = tmpBuff[2] ^ tmpBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (tmpBuff[j] << 8) | tmpBuff[j + 1];
@@ -3694,7 +3692,7 @@ void HMI_SendMachineStatusChange(uint8_t Status, uint8_t Result)
 }
 
 /***********************************************
-发送状态信息
+Отправить информацию о статусе
 ************************************************/
 void HMI_SendMachineStatus()
 {
@@ -3704,25 +3702,25 @@ void HMI_SendMachineStatus()
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
-	//同步状态
+	//Статус синхронизации
 	tmpBuff[i++] = 0x01;
 
-	//坐标
+	//координировать
 	fValue = pCounter_X / axis_steps_per_unit[X_AXIS];
 	u32Value = (uint32_t)(fValue * 1000);
 	tmpBuff[i++] = (uint8_t)(u32Value >> 24);
@@ -3751,7 +3749,7 @@ void HMI_SendMachineStatus()
 	tmpBuff[i++] = (uint8_t)(u32Value >> 8);
 	tmpBuff[i++] = (uint8_t)(u32Value);
 
-	//温度
+	//температура
 	int16_t T0,TB,T0S,TBS;
 	if(current_temperature[0] >= 0)
 		T0 = (int16_t)current_temperature[0];
@@ -3776,24 +3774,24 @@ void HMI_SendMachineStatus()
 	tmpBuff[i++] = (uint8_t)((int)T0S >> 8);
 	tmpBuff[i++] = (uint8_t)((int)T0S);
 
-	//打印机状态
+	//Статус принтера
 	j = GetCurrentPrinterStatus();
 	tmpBuff[i++] = (uint8_t)(j);
 
-	//外设状态
+	//Периферийный статус
 	//tmpBuff[i++] = (uint8_t)(SysStatusFlag >> 24);
 	//tmpBuff[i++] = (uint8_t)(SysStatusFlag >> 16);
 	//tmpBuff[i++] = (uint8_t)(SysStatusFlag >> 8);
 	tmpBuff[i++] = (uint8_t)(SysStatusFlag);
 
-	//执行头类型
+	//Тип заголовка выполнения
 	tmpBuff[i++] = MachineSelected;
 
-	//重填长度
+	//Длина заправки
 	tmpBuff[2] = (uint8_t)((i - 8) >> 8);
 	tmpBuff[3] = (uint8_t)(i - 8);
 	tmpBuff[5] = tmpBuff[2] ^ tmpBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (tmpBuff[j] << 8) | tmpBuff[j + 1];
@@ -3811,7 +3809,7 @@ void HMI_SendMachineStatus()
 }
 
 /***********************************************
-重新挂载U  盘
+Перемонтируйте USB-накопитель
 ************************************************/
 void HMI_SendInitUdisk(uint8_t Result)
 {
@@ -3819,17 +3817,17 @@ void HMI_SendInitUdisk(uint8_t Result)
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -3840,7 +3838,7 @@ void HMI_SendInitUdisk(uint8_t Result)
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -3858,7 +3856,7 @@ void HMI_SendInitUdisk(uint8_t Result)
 }
 
 /***********************************************
-进入目录应答
+Введите ответ каталога
 ************************************************/
 void HMI_SendChDirResult(uint8_t Result)
 {
@@ -3866,17 +3864,17 @@ void HMI_SendChDirResult(uint8_t Result)
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -3887,7 +3885,7 @@ void HMI_SendChDirResult(uint8_t Result)
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -3905,7 +3903,7 @@ void HMI_SendChDirResult(uint8_t Result)
 }
 
 /***********************************************
-获取UDisk  当前目录应答
+Получить ответ текущего каталога UDisk
 ************************************************/
 void HMI_SendCurrentUDiskPath(uint8_t Result)
 {
@@ -3913,17 +3911,17 @@ void HMI_SendCurrentUDiskPath(uint8_t Result)
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -3939,7 +3937,7 @@ void HMI_SendCurrentUDiskPath(uint8_t Result)
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -3957,8 +3955,8 @@ void HMI_SendCurrentUDiskPath(uint8_t Result)
 }
 
 /***********************************************
-获取目录内容
-返回值:  本次发送的个数
+Получить содержимое каталога
+Возвращаемое значение: номер, отправленный на этот раз.
 ************************************************/
 uint8_t HMI_SendDirItems(uint8_t Result, uint16_t Offset)
 {
@@ -3969,33 +3967,33 @@ uint8_t HMI_SendDirItems(uint8_t Result, uint16_t Offset)
 	uint32_t checksum;
 	i=0;
 	Count = 0;
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
 	FileListBuff[i++] = 0x06;
 	FileListBuff[i++] = 0x04;
-	//结果
+	//результат
 	FileListBuff[i++] = 0x00;
 	//Offset
 	FileListBuff[i++] = (uint8_t)(Offset >> 8);
 	FileListBuff[i++] = (uint8_t)Offset;
-	//个数
+	//число
 	FileListBuff[i++] = 0x00;
-	//一次最多传20  个，且总数据长度在缓冲大小之内
+	//Одновременно можно передать максимум 20 элементов, а общая длина данных находится в пределах размера буфера.
 	while((Count < 10) && ((i + 257) < sizeof(FileListBuff)))
 	{
-		//读取目录 
+		//Читать каталог 
 		Res = card.getWorkDirItems();
 		if(Res == 0)
 			FileListBuff[i++] = 0;
@@ -4018,17 +4016,17 @@ uint8_t HMI_SendDirItems(uint8_t Result, uint16_t Offset)
 		Count++;
 	}
 
-	//填结果
+	//Заполните результаты
 	if(Res == (char)-2)
 		FileListBuff[10] = 1;
 		
-	//重填个数
+	//Количество заправок
 	FileListBuff[13] = Count;
 	
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -4048,7 +4046,7 @@ uint8_t HMI_SendDirItems(uint8_t Result, uint16_t Offset)
 }
 
 /***********************************************
-获取文件的特殊内容
+Получить специальное содержимое файла
 ************************************************/
 void HMI_SendSpecialData()
 {
@@ -4065,7 +4063,7 @@ void HMI_SendSpecialData()
 
 	card.openFile(FileListBuff, true);
 	dataValid = 1;
-	//文件打开成功
+	//Файл успешно открыт
 	if(card.isFileOpen() == true)
 	{
 		FileListBuff[0] = FileListBuff[1] = FileListBuff[2] = FileListBuff[3] = 0;
@@ -4076,7 +4074,7 @@ void HMI_SendSpecialData()
 		}
 		else
 		{
-			//计算内容长度
+			//Рассчитать длину контента
 			ContentLen = (uint32_t)((FileListBuff[19] << 24) | (FileListBuff[18] << 16) | (FileListBuff[17] << 8) | FileListBuff[16]) - 20;
 		}
 	}
@@ -4086,17 +4084,17 @@ void HMI_SendSpecialData()
 	}
 
 	i=0;
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -4106,7 +4104,7 @@ void HMI_SendSpecialData()
 	do
 	{
 		i = 11;
-		//正常的特殊文件
+		//обычные специальные файлы
 		if(dataValid == 1)
 		{
 			if(ContentLen > 1024)
@@ -4130,7 +4128,7 @@ void HMI_SendSpecialData()
 		FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 		FileListBuff[3] = (uint8_t)(i - 8);
 		FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-		//校验
+		//проверять
 		checksum = 0;
 		for(j = 8;j<(i - 1);j = j + 2)
 			checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -4152,7 +4150,7 @@ void HMI_SendSpecialData()
 }
 
 /***********************************************
-打印文件应答
+Распечатать файл ответа
 ************************************************/
 void HMI_SendStartPrintReack(uint8_t Result)
 {
@@ -4160,17 +4158,17 @@ void HMI_SendStartPrintReack(uint8_t Result)
 	uint16_t j;
 	uint32_t checksum;
 	i=0;
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -4181,7 +4179,7 @@ void HMI_SendStartPrintReack(uint8_t Result)
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -4199,24 +4197,24 @@ void HMI_SendStartPrintReack(uint8_t Result)
 }
 
 
-//发送Gcode
+//Отправить код
 void HMI_SendGcode(char *GCode, uint8_t EventID)
 {
 	uint8_t i, j;
 	uint32_t checksum;
 	i = 0;
 
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -4227,7 +4225,7 @@ void HMI_SendGcode(char *GCode, uint8_t EventID)
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -4244,24 +4242,24 @@ void HMI_SendGcode(char *GCode, uint8_t EventID)
 	HmiWriteData(FileListBuff, i);
 }
 
-//发送继续打印
+//Отправить, чтобы продолжить печать
 void HMI_SendContinuePrint(void)
 {
 	uint8_t i, j;
 	uint32_t checksum;
 	i = 0;
 	
-	//包头
+	//Баотоу
 	FileListBuff[i++] = 0xAA;
 	FileListBuff[i++] = 0x55;
-	//包长
+	//менеджер пакетов
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
-	//协议版本
+	//Версия протокола
 	FileListBuff[i++] = 0x00;
-	//包长效验
+	//Тест длины упаковки
 	FileListBuff[i++] = 0x00;
-	//校验
+	//проверять
 	FileListBuff[i++] = 0x00;
 	FileListBuff[i++] = 0x00;
 	//EventID
@@ -4270,11 +4268,11 @@ void HMI_SendContinuePrint(void)
 	FileListBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 16);
 	FileListBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 8);
 	FileListBuff[i++] = (uint8_t)(PowerPanicData.FilePosition >> 0);
-	//包长
+	//менеджер пакетов
 	FileListBuff[2] = (uint8_t)((i - 8) >> 8);
 	FileListBuff[3] = (uint8_t)(i - 8);
 	FileListBuff[5] = FileListBuff[2] ^ FileListBuff[3];
-	//校验
+	//проверять
 	checksum = 0;
 	for(j = 8;j<(i - 1);j = j + 2)
 		checksum += (FileListBuff[j] << 8) | FileListBuff[j + 1];
@@ -4299,27 +4297,27 @@ void HMIScreenShow(void)
 	uint8_t percent;
 	static uint32_t nextShowMill;
 	
-	//主界面才发送
+	//Отправляется только в основном интерфейсе
 	if(CurrentHMIPage == PAGE_PRINT)
 	{
 		if (nextShowMill < millis())
 		{
-			//显示喷头温度
+			//Отображение температуры сопла
 			HMI_ShowTemperature(0, (int)current_temperature[0], target_temperature[0]);
-			//显示床温度
+			//Отображение температуры кровати
 			HMI_ShowTemperature(1, (int)current_temperature_bed, target_temperature_bed);
 			
-			//文件已经打开
+			//Файл уже открыт
 			if (card.isFileOpen())
 			{
-				//获取文件进度
+				//Получить прогресс файла
 				percent = card.percentDone();
 				card.LastPercent = percent;
 
-				//显示进度条
+				//Показать индикатор выполнения
 				HMI_ShowProgressBar(percent);
 
-				//显示打印时间	
+				//Показать время печати	
 				HMI_ShowPrintTime();
 				
 			}
@@ -4330,22 +4328,22 @@ void HMIScreenShow(void)
 	{
 		if (nextShowMill < millis())
 		{
-			//文件已经打开
+			//Файл уже открыт
 			if (card.isFileOpen())
 			{
-				//获取文件进度
+				//Получить прогресс файла
 				percent = card.percentDone();
 				card.LastPercent = percent;
 
-				//显示进度条
+				//Показать индикатор выполнения
 				HMI_ShowProgressBar(percent);
 				
-				//显示打印时间	
+				//Показать время печати	
 				HMI_ShowPrintTime();
 			}
 			if(isLaserMachine(MachineSelected))
 			{
-				HMI_ShowLaserPower(laserPercent);//刷新屏幕显示	
+				HMI_ShowLaserPower(laserPercent);//Обновить отображение экрана	
 			}
 			nextShowMill = millis() + 1000;
 		}
@@ -4360,17 +4358,17 @@ void HMIScreenShow(void)
 	}
 	
 	
-	//存储器已经插入
+	//Память вставлена
 	if(SdInsert == true)
 	{
-		//本次检测被拔出来
+		//Этот тест был удален
 		if(!(IS_UDISK_INSERTED))
 		{
-			//设置图标
+			//значок настроек
 			HMI_SetTFIcon(false);
-			//标识卡被拔出
+			//Удостоверение личности было вытащено
 			SdInsert = false;
-			//退出主界面
+			//Выйти из основного интерфейса
 			if(CurrentHMIPage == PAGE_FILELIST)
 			{
 				nextShowMill = millis() + 50;
@@ -4383,15 +4381,15 @@ void HMIScreenShow(void)
 			}
 		}
 	}
-	//SD  卡未插入
+	//SD-карта не вставлена
 	else
 	{
-		//本次检测已插入
+		//Этот тест был вставлен
 		if(IS_UDISK_INSERTED)
 		{
-			//设置图标
+			//значок настроек
 			HMI_SetTFIcon(true);
-			//标识卡已插入
+			//ID-карта вставлена
 			SdInsert = true;
 		}
 	}
@@ -4458,7 +4456,7 @@ void HMI_ShowFileName(uint8_t Index, char *FileName)
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -4466,15 +4464,15 @@ void HMI_ShowFileName(uint8_t Index, char *FileName)
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -4491,7 +4489,7 @@ void HMI_ShowFileName(uint8_t Index, char *FileName)
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -4539,7 +4537,7 @@ void HMI_ShowTemperature(uint8_t Index, int CurrentTemp, int TargetTemp)
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -4547,15 +4545,15 @@ void HMI_ShowTemperature(uint8_t Index, int CurrentTemp, int TargetTemp)
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -4572,7 +4570,7 @@ void HMI_ShowTemperature(uint8_t Index, int CurrentTemp, int TargetTemp)
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -4615,7 +4613,7 @@ void HMI_ShowProgressBar(uint8_t Value)
 	tmpBuff[i++] = Value;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=3;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -4692,7 +4690,7 @@ void HMI_SetControlEnable(bool Enable)
 	}
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -4746,7 +4744,7 @@ void HMI_SetSettingEnable(bool Enable)
 	}
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -4819,7 +4817,7 @@ void HMI_PauseEnable(bool Enable)
 	}
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -4894,7 +4892,7 @@ void HMI_StopEnable(bool Enable)
 	}
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -4968,7 +4966,7 @@ void HMI_SetTFIcon(bool Enable)
 	}
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5009,7 +5007,7 @@ void HMI_ShowConfirmFileName(char *FileName)
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5017,15 +5015,15 @@ void HMI_ShowConfirmFileName(char *FileName)
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5042,7 +5040,7 @@ void HMI_ShowConfirmFileName(char *FileName)
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5084,15 +5082,15 @@ void HMI_ShowPrintFileName(char *FileName)
 	tmpBuff[i++] = id[2];
 	tmpBuff[i++] = id[3];
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5102,13 +5100,13 @@ void HMI_ShowPrintFileName(char *FileName)
 	tmpBuff[i++] = id[3];
 	#endif
 
-	//获取文件名长度
+	//Получить длину имени файла
 	uint8_t Len;
 	Len = strlen(FileName);
-	//长度超过显示范围
+	//Длина превышает диапазон отображения
 	if(Len > 32)
 	{
-		//规划显示
+		//отображение планирования
 		uint8_t extlen;
 		uint8_t divlen;
 		uint8_t dotcount;
@@ -5122,17 +5120,17 @@ void HMI_ShowPrintFileName(char *FileName)
 			p--;
 			extlen++;
 		}
-		//扩展名在10  个字节以内表示正常
+		//Расширение является нормальным, если оно находится в пределах 10 байт.
 		if((extlen < 10) && (extlen > 0))
 		{
 			extlen++;
-			//计算除去后缀，可显示长度
+			//При расчете суффикс удаляется и отображается длина.
 			sflen = 31 - extlen;
-			//计算文件名
+			//Вычислить имя файла
 			fl = Len - extlen;
-			//计算省略号
+			//Подсчитайте эллипсы
 			dotcount = fl - sflen;
-			//省略号过多
+			//Слишком много эллипсов
 			if(dotcount > 3)
 			{
 				if((sflen % 2) != 0)
@@ -5141,18 +5139,18 @@ void HMI_ShowPrintFileName(char *FileName)
 					dotcount = 4;
 			}
 
-			//计算前后各占多少字节 
+			//Посчитайте, сколько байт каждый занимает до и после 
 			divlen = (sflen - dotcount) / 2;
 
-			//前半部份文件名
+			//Первая половина имени файла
 			for(j=0;j<divlen;j++)
 				tmpBuff[i++] = FileName[j];
 
-			//  省略号
+			//  Эллипсис
 			for(j=0;j<dotcount;j++)
 				tmpBuff[i++] = '.';
 			
-			//后半部份文件名
+			//Вторая половина имени файла
 			p = &FileName[Len - extlen - divlen];
 			for(j=0;j<divlen + extlen;j++)
 			{
@@ -5176,7 +5174,7 @@ void HMI_ShowPrintFileName(char *FileName)
 	tmpBuff[i++] = 0;
 	#if(SNAP_OLD_BASE == 1)
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5186,7 +5184,7 @@ void HMI_ShowPrintFileName(char *FileName)
 	#else
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5225,7 +5223,7 @@ void HMI_ShowDialogText(char *String)
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5271,7 +5269,7 @@ void HMI_ZOffsetLable(float Value)
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5279,15 +5277,15 @@ void HMI_ZOffsetLable(float Value)
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5304,7 +5302,7 @@ void HMI_ZOffsetLable(float Value)
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5349,7 +5347,7 @@ void HMI_ShowChangeFilamentTamp()
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5357,15 +5355,15 @@ void HMI_ShowChangeFilamentTamp()
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5382,7 +5380,7 @@ void HMI_ShowChangeFilamentTamp()
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5417,7 +5415,7 @@ void HMI_ShowChangeFilamentTamp()
 	tmpBuff[i++] = 0;
 
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5425,15 +5423,15 @@ void HMI_ShowChangeFilamentTamp()
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5450,7 +5448,7 @@ void HMI_ShowChangeFilamentTamp()
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5499,7 +5497,7 @@ void HMI_ShowLaserPower(float Power)
 	tmpBuff[i++] = 0;
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5507,15 +5505,15 @@ void HMI_ShowLaserPower(float Power)
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5532,7 +5530,7 @@ void HMI_ShowLaserPower(float Power)
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5589,7 +5587,7 @@ void HMI_ShowPrintTime(void)
 	tmpBuff[i++] = 0;
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5597,15 +5595,15 @@ void HMI_ShowPrintTime(void)
 	checksum = 0x100 - checksum;
 	tmpBuff[i++] = checksum;
 	#else
-	//包头
+	//Баотоу
 	tmpBuff[i++] = 0xAA;
 	tmpBuff[i++] = 0x55;
-	//协议版本
+	//Версия протокола
 	tmpBuff[i++] = 0x00;
-	//包长
+	//менеджер пакетов
 	tmpBuff[i++] = 0x00;
 	tmpBuff[i++] = 0x00;
-	//校验
+	//проверять
 	tmpBuff[i++] = 0x00;
 	//EventID
 	tmpBuff[i++] = 0x08;
@@ -5622,7 +5620,7 @@ void HMI_ShowPrintTime(void)
 	tmpBuff[i++] = 0;
 	tmpBuff[3] = (uint8_t)((i - 6) >> 8);
 	tmpBuff[4] = (uint8_t)(i - 6);
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=6;j<i;j++)
 		checksum = checksum + tmpBuff[j];
@@ -5670,7 +5668,7 @@ void HMI_ChangePrinterStatus(U8 Status)
 	tmpBuff[i++] = id[3];
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5701,7 +5699,7 @@ void HMI_ChangeLaserCNCStatus(U8 Status)
 	tmpBuff[i++] = id[3];
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];
@@ -5736,7 +5734,7 @@ void HMI_SetAboutText(uint16_t u32LableID,char * Ver)
 	tmpBuff[i++] = 0;
 	
 	tmpBuff[2] = i - 3;
-	//校验
+	//проверять
 	checksum = 0;
 	for(j=0;j<(i-3);j++)
 		checksum = checksum + tmpBuff[j+3];

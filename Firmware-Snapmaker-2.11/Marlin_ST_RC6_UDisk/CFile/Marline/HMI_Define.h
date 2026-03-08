@@ -37,7 +37,7 @@
 #define PAGE_PAGE_RESETCALIBRATE_HA	31
 
 
-/*Page  ID*/
+/*Идентификатор страницы*/
 #define  Menu_PageID         0
 #define  OpenFile_PageID   1
 #define  Control_PageID     2
@@ -111,14 +111,14 @@ const uint8_t PageID[] = {
 
 
 
-//机型选择界面
+//Интерфейс выбора модели
 #define BUTTON_CNC	0x0F39
 #define BUTTON_3DPRINT	0x0F3A
 
-//控制退出
+//контролируемый выход
 #define BUTTON_CONTROL_BACK	0x0206
 
-//轴移动控制
+//Управление движением оси
 #define BUTTON_MOVE_AXIS 	0x0214
 #define BUTTON_MOVE_AXIS_BACK_001 0x0406
 #define BUTTON_MOVE_AXIS_HOME_001 0x0407
@@ -147,14 +147,14 @@ const uint8_t PageID[] = {
 #define BUTTON_ZL_100 	0x0620
 #define BUTTON_ZR_100 	0x0621
 
-//机型选择
+//Выбор модели
 #define BUTTON_MACHINE_SELECT	0xFFFF
 
-//回原点
+//начало вращения
 #define BUTTON_MOTOR_HOME 	0x0213
 #define BUTTON_STOP_HOME	0x0D35
 
-//取消打印确定
+//Отменить печать ОК
 #define BUTTON_STOP_PRINT_CONFIRM	0x092F
 #define BUTTON_STOP_PRINT_CANCEL	0x0949
 
@@ -162,7 +162,7 @@ const uint8_t PageID[] = {
 #define BUTTON_CONFIRM	0x082C
 #define BUTTON_CANCEL	0x082B
 
-//换料
+//Изменить материалы
 #define BUTTON_CHANGE_FILAMENT 	0x0212
 #define BUTTON_CONFIRM_CHANGE_FILAMENT	0x0B2F
 #define BUTTON_CANCEL_CHANGE_FILAMENT	0x0B49
@@ -189,21 +189,21 @@ const uint8_t PageID[] = {
 #define BUTTON_FILE5	0x010D
 #define BUTTON_FILE6	0x010E
 
-//文件确定
+//Файл ОК
 #define BUTTON_FILE_CONFIRM_UP	0x0A4A
 #define BUTTON_FILE_CANCEL_UP	0x0A2E
 
-//控制
+//контроль
 #define BUTTON_STOP_PRINT	0x0002
 #define BUTTON_CONTROLL	0x0004
 #define BUTTON_SETTING	0x0005
 
-//暂停打印
+//Приостановить печать
 #define BUTTON_PAUSE_PRINT	0x0030
 #define BUTTON_CONTINUE_PRINT	0x0031
 
 
-//Z OFFSET
+//СО СМЕЩЕНИЕМ
 #define BUTTON_STOP_ZOFFSET	0xfff3
 #define BUTTON_ZOFFSET_SETUP	0x0316
 #define BUTTON_ZOFFSET_HOME	0x0707
@@ -259,45 +259,45 @@ const uint8_t PageID[] = {
 
 
 
-//Wait Zcenter
+//Подождите
 #define BUTTON_STOP_ZCENTER	0x1135
 
 
-//设置界面Back
+//Установка интерфейса обратно
 #define BUTTON_SETTING_BACK	0x0306
-//FAQ
+//Часто задаваемые вопросы
 #define BUTTON_FAQ		0x0317
 #define BUTTON_FAQ_BACK	0x1006
 #define BUTTON_FAQ_HOME	0x1007
 
-//CNC  主界面
+//Основной интерфейс ЧПУ
 #define BUTTON_CNC_SHOW_FILE	0x0F3C
 #define BUTTON_CNC_PAUSE	0x0F3F
 #define BUTTON_CNC_RUN	0x0F3E
 #define BUTTON_CNC_STOP	0x0F40
 #define BUTTON_CNC_CONTROL	0x0f69
 
-//CNC  控制界面Back
+//Интерфейс управления ЧПУНазад
 #define BUTTON_CNC_CONTROL_BACK	0x1C06
 
-//CNC  开
+//ЧПУ включено
 #define BUTTON_CNC_ON	0x1C66
-//CNC  关
+//ЧПУ выключено
 #define BUTTON_CNC_OFF	0x1C67
 
-//CNC  设置原点
+//ЧПУ установило начало координат
 #define BUTTON_CNC_SET_ORIGIN	0x1C65
 
-//CNC  手动模式
+//Ручной режим ЧПУ
 #define BUTTON_CNC_MOVE_AXIS	0x1C64
 
-//About
+//О
 #define BUTTON_ABOUT	0x0318
 #define BUTTON_ABOUT_BACK	0x1406
 #define BUTTON_ABOUT_HOME	0x1407
 #define BUTTON_ABOUT_UPDATE	0x1408
 
-//半自动高平
+//полуавтоматический высокого уровня
 #define BUTTON_ZHA_ZOFFSET_SETUP	0x0319
 
 #define BUTTON_ZHA_CALIBRATE_UP_005	0x1e5d
@@ -339,25 +339,25 @@ const uint8_t PageID[] = {
 #define BUTTON_SET_LASER_FOCUS_HIGH	0x3008
 #define BUTTON_ENTER_LASER_FOCUS_SETTING	0x3009
 
-//LABEL  由RegionID  和LABLEID  组成
+//LABEL состоит из RegionID и LABLEID.
 
-/*****ProgressBar ID*******/
+/*****Идентификатор прогрессбара******/
 #define PROGRESSBAR_PRINT  0x0100
-//喷头温度
+//Температура сопла
 #define LABEL_TEMP_HEART0		0x0107
-//热床温度
+//Температура нагревательного слоя
 #define LABEL_TEMP_BED		0x0108
-//确定打印对话框文件名
+//Определите имя файла диалогового окна печати
 #define LABEL_CONFIRM_PRINT_FILENAME	0x3232
-//打印文件名
+//Распечатать имя файла
 #define LABEL_PRINT_FILENAME	0x0100
-//对话框标签
+//Ярлык диалогового окна
 #define LABEL_DIALOG_FILENAME	0x4243
-//打印时间
+//Время печати
 #define LABEL_PRINT_TIME			0x0109
-//Z offset
+//Со смещением
 #define LABEL_ZOFFSET		0x252A
-//文件列表
+//список файлов
 #define LABEL_FILE1		0x090F
 #define LABEL_FILE2		0x0A10
 #define LABEL_FILE3		0x0B11
@@ -365,7 +365,7 @@ const uint8_t PageID[] = {
 #define LABEL_FILE5		0x0D13
 #define LABEL_FILE6		0x0E14
 
-//About  界面Lable ID
+//Об идентификаторе метки интерфейса
 #define LABEL_ABOUT_1	0x1445
 #define LABEL_ABOUT_2	0x1446
 #define LABEL_ABOUT_3	0x1447
@@ -376,20 +376,20 @@ const uint8_t PageID[] = {
 #define LABEL_ABOUT_8	0x144C
 
 
-//确认换料
+//Подтвердить изменение материала
 #define LABEL_HEATER_TARGET_TEMP	0x5255
 #define LABEL_HEATER_CUR_TEMP	0x5257
 
-//换料界面
+//Интерфейс смены материала
 #define LABEL_WAIT_HEATER		0x0E44
 
-//CNC  打印文件列表
+//Список файлов печати с ЧПУ
 #define LABEL_CNC_FILENAME	0x3B01
-//CNC  时间
+//время ЧПУ
 #define LABEL_CNC_TIME	0x3A3A
-//CNC  时间
+//время ЧПУ
 #define LABEL_CNC_POWER	0x3A6F
-//CNC  进度条
+//Индикатор выполнения ЧПУ
 #define PROGRESSBAR_CNC 0x0F01
 
 

@@ -87,7 +87,7 @@ void UDisk::lsDive(const char *prepend, DIR *parent, const char * const match/*=
 	FILINFO fileinfo;
 	uint8_t cnt = 0;
 
-	//目录未打开
+	//Каталог не открыт
 	if(parent->fs == 0)
 		f_opendir(parent, "0:\\");
 	
@@ -105,7 +105,7 @@ void UDisk::lsDive(const char *prepend, DIR *parent, const char * const match/*=
 		{
 			return;
 		}
-		//找到文件夹
+		//найти папку
 		if((fileinfo.fattrib & AM_DIR) && (lsAction != LS_Count) && (lsAction != LS_GetFilename))
 		{
 			continue;
@@ -157,7 +157,7 @@ void UDisk::lsDive(const char *prepend, DIR *parent, const char * const match/*=
 				ExtName[1] = ExtName[1] - 'a' + 'A';
 			if(ExtName[2] >= 'a')
 				ExtName[2] = ExtName[2] - 'a' + 'A';
-			//Gcode文件
+			//файл G-кода
 			if(filter == FIL_GCODE)
 			{
 				if((ExtName[0]!='G') || (ExtName[1]!='C') || (ExtName[2]!='O')) continue;
@@ -176,7 +176,7 @@ void UDisk::lsDive(const char *prepend, DIR *parent, const char * const match/*=
 				break;
 				
 				case LS_SerialPrint:
-					//长文件名
+					//длинное имя файла
 					SERIAL_PROTOCOLLN(longFilename);
 
 					//SERIAL_PROTOCOLLN("\r\n");
@@ -455,8 +455,8 @@ uint16_t UDisk::getnrfilenames(uint8_t Filter) {
 }
 
 /****************************************
-文件跳转
-seekpos  :  位置
+Переход к файлу
+искатьпос: позиция
 *****************************************/
 bool UDisk::FileSeek(int seekpos)
 {
@@ -478,8 +478,8 @@ bool UDisk::FileSeek(int seekpos)
 }
 
 /****************************************
-获取文件长度
-返回值:  -1  表示文件没打开；其他表示文件长度
+Получить длину файла
+Возвращаемое значение: -1 означает, что файл не открыт; другое означает длину файла
 ****************************************/
 int32_t UDisk::GetFileSize()
 {
@@ -500,10 +500,10 @@ char UDisk::get(char *pBuff)
 
 	LastPos = UdiskSeekPos;
 	
-	//缓存数据已读完
+	//Данные кэша были прочитаны
 	if(UdiskBuffLen == 0)
 	{
-		//文件已关闭
+		//Файл закрыт
 		if(card.isFileOpen() == false)
 		{
 			f_mount(&CardFatfs, "0:\\", 1);
@@ -512,7 +512,7 @@ char UDisk::get(char *pBuff)
 			WaitUDisk();
 			f_lseek(&file, UdiskSeekPos);
 		}
-		//获取文件当前的位置
+		//Получить текущее местоположение файла
 		UdiskSeekPos = f_tell(&file);
 		LastPos = UdiskSeekPos;
 		Res = WaitUDisk();
@@ -521,7 +521,7 @@ char UDisk::get(char *pBuff)
 		{
 			FR = f_read(&file, (char*)UdiskBuff, 512, &RN);
 			WaitUDisk();
-			//读取文件成功
+			//Прочитать файл успешно
 			if(FR == FR_OK)
 			{
 				UdiskBuffLen = RN - 1;
@@ -532,7 +532,7 @@ char UDisk::get(char *pBuff)
 				Udiskpos = UdiskSeekPos;
 				return 0;
 			}
-			//读取失败
+			//Чтение не удалось
 			else
 			{
 				SERIAL_ECHO_START;
@@ -542,16 +542,16 @@ char UDisk::get(char *pBuff)
 				file.fs = 0;
 			}
 		}
-		//读取文件失败，重新挂载U  盘
+		//Не удалось прочитать файл, перемонтируйте USB-диск.
 		else if(Res == (char)-1)
 		{
-			//复位U  盘
+			//Сброс USB-накопителя
 			UDiskRestart();
 			SERIAL_ECHO_START;
 			SERIAL_ECHOLNPGM("Udisk Reset!\r\n");
 			return (char)-1;
 		}
-		//U  盘断开
+		//USB-диск отключен
 		else if(Res == (char)-2)
 		{
 			f_mount(&CardFatfs, "0:\\", 1);
@@ -577,7 +577,7 @@ char UDisk::get(char *pBuff)
 		}
 		return (char)-1;
 	}
-	//缓存还有数据
+	//В кеше все еще есть данные
 	else
 	{
 		*pBuff = UdiskBuff[UdiskGetIndex++];
@@ -607,7 +607,7 @@ bool UDisk::getWorkDirPath()
 }
 
 /********************************************
-清除目录读取索引
+Очистить индекс чтения каталога
 **********************************************/
 void UDisk::ClearCurrentList()
 {
@@ -615,8 +615,8 @@ void UDisk::ClearCurrentList()
 }
 
 /********************************************
-//获取目录内容
-返回值:  -1  表示已无内容；0  表示文件；1  表示目录
+//Получить содержимое каталога
+Возвращаемое значение: -1 означает, что содержимого нет; 0 означает файл; 1 означает каталог
 **********************************************/
 char UDisk::getWorkDirItems()
 {
@@ -649,7 +649,7 @@ char UDisk::getWorkDirItems()
 
 
 /********************************************
-//获取特殊文件头信息
+//Получить специальную информацию о заголовке файла
 **********************************************/
 int32_t UDisk::ReadBytes(uint8_t *pBuff, int32_t Len)
 {
@@ -708,7 +708,7 @@ void UDisk::updir()
 	strcpy(workdirpath, "");
 	f_opendir(&ListDir, "0:\\");
   }
-  //查找上个目录
+  //Найти предыдущий каталог
   Len = strlen(workdirpath) - 1;
   while(1)
   {

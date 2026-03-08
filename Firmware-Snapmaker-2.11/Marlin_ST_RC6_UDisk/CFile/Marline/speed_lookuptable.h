@@ -27,7 +27,7 @@
 
 #define PROGMEM	
 
-//定时器分频到2M
+//Таймер разделен на 2 м.
 #if F_CPU == 2000000
 
 const uint16_t speed_lookuptable_fast[256][2] = {\

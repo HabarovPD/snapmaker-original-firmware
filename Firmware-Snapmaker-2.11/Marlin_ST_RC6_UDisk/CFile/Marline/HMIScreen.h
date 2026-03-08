@@ -65,9 +65,9 @@ EXT_HMISCREEN void ScreenLockCheck(void);
 
 
 
-//锁屏标置
+//Настройка экрана блокировки
 EXT_HMISCREEN bool ScreenLock;
-//锁屏计时器
+//Таймер экрана блокировки
 EXT_HMISCREEN uint32_t ScreenLockTick;
 EXT_HMISCREEN uint8_t CurrentHMIPage;
 EXT_HMISCREEN FIL UpdateFile;

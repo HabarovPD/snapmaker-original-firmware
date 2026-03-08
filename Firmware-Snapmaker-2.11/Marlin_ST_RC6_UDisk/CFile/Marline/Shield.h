@@ -15,17 +15,17 @@ EXT_SHIELD void DisableDoorCheck();
 EXT_SHIELD void ShieldLedOn(void);
 EXT_SHIELD void ShieldFanOn(void);
 
-//门是否启动检测
+//Проверьте, активирована ли дверь
 EXT_SHIELD bool DoorCheckEnable;
-//外罩控制计时
+//Сроки контроля покрытия
 EXT_SHIELD unsigned long ShieldFanOffTick;
 EXT_SHIELD unsigned long ShieldLedOffTick;
 
-//外罩设备是否可操作
+//Оборудование корпуса работоспособно?
 EXT_SHIELD bool ShieldFanControlEn;
 EXT_SHIELD bool ShieldLedControlEn;
 
-//外罩设备开启状态
+//Статус открытия крышки устройства
 EXT_SHIELD bool ShieldFanIsTurnOn;
 EXT_SHIELD bool ShieldLedIsTurnOn;
 

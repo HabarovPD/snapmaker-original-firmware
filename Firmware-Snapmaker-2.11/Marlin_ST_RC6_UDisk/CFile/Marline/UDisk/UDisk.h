@@ -85,11 +85,11 @@ public:
   bool saving, logging, sdprinting, cardOK, filenameIsDir;
   uint8_t LastPercent;
   char filename[FILENAME_LENGTH + 1], longFilename[LONG_FILENAME_LENGTH + 1];
-  //断点暂停使用的文件名
+  //Имя файла, которое будет использоваться при приостановке точки останова.
   char currentselectfilename[LONG_FILENAME_LENGTH + 1];
-  //断点暂停使用的文件位置记录
+  //Запись местоположения файла, используемая паузой точки останова
   uint32_t postell;
-  //当前工作目录的路径
+  //Путь к текущему рабочему каталогу
   char workdirpath[255];
 private:
   DIR root;

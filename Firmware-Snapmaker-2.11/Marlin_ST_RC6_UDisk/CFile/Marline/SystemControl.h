@@ -27,30 +27,30 @@ EXT_SYSTEMCONTROL void AndroidScreenPowerManager();
 EXT_SYSTEMCONTROL void SystemIdleProcess(void);
 EXT_SYSTEMCONTROL void SystemSelfCheck(void);
 
-//在线打印标置
+//Онлайн печать маркировки
 EXT_SYSTEMCONTROL bool PrintingOnLine;
-//在线打印指令行数
+//Номер строки инструкции по онлайн-печати
 EXT_SYSTEMCONTROL uint32_t CommandLine4OnLine;
-//暂停状态请求
+//Приостановить запрос статуса
 //EXT_SYSTEMCONTROL uint8_t PrintStatusRequest;
-//机器类型
+//Тип машины
 EXT_SYSTEMCONTROL uint8_t MachineSelected;
-//文件过滤器
+//фильтр файлов
 EXT_SYSTEMCONTROL uint8_t FileFilter;
 
-//外设插入检测标置
+//Маркировка обнаружения вставки периферийных устройств
 EXT_SYSTEMCONTROL uint8_t PeriphPlugFlag;
-//机器工作模式
+//Режим работы машины
 EXT_SYSTEMCONTROL WordMode MachineMode;
-//半自动校准使能
+//Полуавтоматическая калибровка включена
 EXT_SYSTEMCONTROL uint8_t HalfAutoCalibrateState;
 EXT_SYSTEMCONTROL float HalfAutoCalibrateZPosition;
 
-//暂停与终止打印时，保存的计算器
+//Сохраняется калькулятор при приостановке и прекращении печати.
 EXT_SYSTEMCONTROL volatile long StableCounter[NUM_AXIS];
 
-//故障标置
+//Настройка неисправности
 EXT_SYSTEMCONTROL uint32_t SysFaultFlag;
-//状态标置
+//настройка статуса
 EXT_SYSTEMCONTROL uint32_t SysStatusFlag;
 #endif
