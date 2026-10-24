@@ -26,7 +26,15 @@ The F103 build has no USB host, because that chip has no USB OTG. Printing and
 updating from a USB stick are disabled. The touchscreen, 3D printing, laser, CNC
 and printing over the USB cable from a PC are unchanged.
 
-## Quick start (Windows + MSYS2)
+## Download
+
+Prebuilt binaries are in the latest release:
+**[v2.11-gcc1](https://github.com/HabarovPD/snapmaker-original-firmware/releases/tag/v2.11-gcc1)**
+([all releases](https://github.com/HabarovPD/snapmaker-original-firmware/releases)).
+The same files are also in [`bins/Snapmaker-2.11-gcc/`](bins/Snapmaker-2.11-gcc/),
+together with flashing instructions.
+
+## Build from source (Windows + MSYS2)
 
 ```sh
 pacman -S mingw-w64-ucrt-x86_64-arm-none-eabi-toolchain mingw-w64-ucrt-x86_64-openocd make
