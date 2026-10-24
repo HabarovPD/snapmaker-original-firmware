@@ -1,10 +1,10 @@
 #ifndef _SNAPMAKER_DEFINES_H_
 #define _SNAPMAKER_DEFINES_H_
 
-//Старая главная плата управления PB1 — это ворота.
+//老主控板PB1  为Gate
 #define SNAP_OLD_BASE	1
 
-//Определение аппаратного интерфейса
+//硬件接口定义
 #define HAVE_HMI		1
 #define HAVE_SHIELD_FAN	0
 #define HAVE_SHIELD_LED	0
@@ -16,63 +16,63 @@
 
 #define IO_DOOR_EN	(1<<2)
 
-//Лазерное затемнение с помощью ЦАП
+//激光调光使用DAC
 #define LASER_USE_DAC	0
 
-//Автоматический контроль покрытия
+//外罩自动控制
 #define SHIELD_AUTO_CONTROL	0
 
-//Прекратить источник триггера
+//终止触发源
 typedef enum
 {
 	NoneStop = 0,
-	//Офлайн-печать завершается и останавливается
+	//脱机打印结束停止
 	EndPrint = 1,
-	//Человеческая машина останавливается
+	//人机停止
 	ManualStop,
-	//Остановиться, когда питание отключено
+	//断电停止
 	PowerPanicStop
 }StopPrintType;
 
-//источник триггера паузы
+//暂停触发源
 typedef enum
 {
 	NonePause = 0,
-	//Ошибка материала
+	//物料错误
 	FilamentFaultPause = 1,
-	//Человеческая машина останавливается
+	//人机停止
 	ManualPause,
-	//прерывание двери
+	//门中断
 	DoorOpenPause,
-	//Заголовок выполнения отсутствует
+	//执行头丢失
 	ExecuterLostPause,
-	//продолжать
+	//继续
 	ContinuePrint
 }PausePrintType;
 
-//Статус действия машины
+//机器动作状态
 typedef enum
 {
-	//Состояние ожидания
+	//待机状态
 	STAT_IDLE = 0,
-	//Печать
+	//打印中
 	STAT_PRINTING,
-	//пауза
+	//暂停
 	STAT_PAUSE,
-	//Печать на машине
+	//连机打印中
 	STAT_PRINTING_ONLINE,
-	//Соединение приостановлено
+	//连机暂停
 	STAT_PAUSE_ONLINE
 }PrinterStatus;
 
-//Управление выключателем питания
+//电源开关控制
 typedef enum
 {
 	POWER_OPTION_MainPower = 0,
 	POWER_OPTION_StepperPower
 }PowerOption;
 
-//Статус управления питанием экрана Android
+//安卓屏幕电源控制状态
 enum
 {
 	ANDROID_PWR_STAT_IDLE = 0,
@@ -81,23 +81,23 @@ enum
 	ANDROID_PWR_STAT_KEYDOWN
 };
 
-//Рабочее состояние машины
+//机器工作状态
 typedef enum
 {
 	WORK_MODE_IDLE = 0,
 	WORK_MODE_RUNNING
 }WordMode;
 
-//Определение набора флагов доступа к периферийным устройствам
+//外围接入标置位定义
 #define PERIPH_PC_FLAG		(1<<0)
 #define PERIPH_SCREEN_FLAG	(1<<1)
 
-//управление экраном 
+//屏幕控制 
 #define ANDROID_CTRL_NONE		0
 #define ANDROID_CTRL_RESET		1
 #define ANDROID_CTRL_POWEROFF	2
 
-//Маркировка ошибок
+//错误标置
 #define FAULT_FLAG_HEATER0	1
 #define FAULT_FLAG_BED		(1<<1)
 #define FAULT_FLAG_LOAD		(1<<2)

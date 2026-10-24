@@ -29,7 +29,7 @@
 #define SOURCE_PIN		GPIO_PinSource8
 #define PORT_X			GPIOA
 #endif
-//Для входа в прерывание необходимо просмотреть файл .S.
+//中断入口需要查看.S  文件
 
 extern void sync_plan_position();
 extern void gcode_M104();
@@ -72,7 +72,7 @@ const uint32_t PortRccTable[] =
 
 
 /********************************************
-Инициализация выключения питания
+断电初始化
 ********************************************/
 void ShieldInit(void)
 {
@@ -80,11 +80,11 @@ void ShieldInit(void)
 	NVIC_InitTypeDef NVIC_InitStruct;
 	GPIO_InitTypeDef GPIO_InitStruct;
 
-	//Старая основная плата управления обеспечивает обнаружение укрытий только в лазерном режиме.
+	//老主控板只在激光模式开启外罩检测
 	#if(SNAP_OLD_BASE == 1)
 	if((MA_LASER == MachineSelected) || (MA_LASER_350 == MachineSelected))
 	{
-		//Дверь
+		//Door
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);           
 		RCC_APB2PeriphClockCmd(PortRccTable[SOURCE_PORT], ENABLE);
 
@@ -149,7 +149,7 @@ void ShieldInit(void)
 }
 
 /********************************************
-Индикатор крышки горит
+外罩灯光打开
 ********************************************/
 void ShieldLedOn(void)
 {
@@ -168,7 +168,7 @@ void ShieldLedOn(void)
 }
 
 /********************************************
-Вентилятор корпуса запускается
+外罩风扇启动
 ********************************************/
 void ShieldFanOn(void)
 {
@@ -189,7 +189,7 @@ void ShieldFanOn(void)
 
 
 /********************************************
-Включить обнаружение отключения электроэнергии
+使能断电检测
 ********************************************/
 void EnableDoorCheck()
 {
@@ -200,7 +200,7 @@ void EnableDoorCheck()
 	}
 }
 /********************************************
-Отключено обнаружение отключения электроэнергии
+禁能断电检测
 ********************************************/
 void DisableDoorCheck()
 {
@@ -215,7 +215,7 @@ void DisableDoorCheck()
 
 extern "C"
 {
-//Новая схема
+//新品电路
 #if(SNAP_OLD_BASE == 1)
 void EXTI9_5_IRQHandler(void)
 #else
@@ -224,7 +224,7 @@ void EXTI1_IRQHandler(void)
 {
 	CRITICAL_SECTION_START;
 	
-	//Восходящий край, действие открывания двери
+	//上升沿，门打开动作
 	if(PORT_X->IDR & (1<<SOURCE_PIN))
 	{
 		if((MA_LASER == MachineSelected) || (MA_LASER_350 == MachineSelected))
@@ -234,15 +234,15 @@ void EXTI1_IRQHandler(void)
 				PauseTriggle(DoorOpenPause);
 				current_block = NULL;
 				block_buffer_head = block_buffer_tail = 0;
-				//Отключить обнаружение
+				//关闭检测
 				DisableDoorCheck();
-				//лазер выключен
+				//激光关闭
 				SetLaserPower(0);
 			}
 		}
 		ShieldLedOn();
 	}
-	//Задний фронт, закрывание двери
+	//下降沿，门关闭动作
 	else
 	{
 		if((MA_LASER == MachineSelected) || (MA_LASER_350 == MachineSelected))
@@ -250,7 +250,7 @@ void EXTI1_IRQHandler(void)
 			if(GetCurrentPrinterStatus() == STAT_PAUSE)
 			{
 				PauseResume();
-				//Отключить обнаружение
+				//关闭检测
 				DisableDoorCheck();
 			}
 		}

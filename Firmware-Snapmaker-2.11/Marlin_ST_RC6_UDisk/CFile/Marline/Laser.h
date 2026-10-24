@@ -19,11 +19,11 @@ EXT_LASER bool SaveLaserFocusZValue(float ZValue);
 EXT_LASER float LaserZValue;
 #endif
 
-//Мощность, потребляемая при настройке фокуса
+//调焦时使用的功率
 EXT_LASER uint8_t LaserFocusPwm;
-EXT_LASER float LaserSafePercent;//Порог безопасности, если он меньше этого значения, его можно считать фокусирующим, и свет все равно будет гореть при открытии двери.
-EXT_LASER uint8_t LaserSafePwm;  //Порог безопасности, если он меньше этого значения, его можно считать фокусирующим, и свет все равно будет гореть при открытии двери.
-//Последняя светлая сила
+EXT_LASER float LaserSafePercent;//安全阈值，小于这个值可以认为是调焦，开门仍然亮
+EXT_LASER uint8_t LaserSafePwm;  //安全阈值，小于这个值可以认为是调焦，开门仍然亮
+//最后一次出光功率
 EXT_LASER uint16_t LastLaserPwm;
 
 #endif

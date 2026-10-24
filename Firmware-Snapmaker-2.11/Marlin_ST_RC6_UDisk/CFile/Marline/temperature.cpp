@@ -998,7 +998,7 @@ static void updateTemperaturesFromRawValues() {
   #endif
   for (uint8_t e = 0; e < EXTRUDERS; e++) {
     current_temperature[e] = analog2temp(current_temperature_raw[e], e);
-	//Паладин: температурный тест
+	//Paladin :  温度测试
 	//current_temperature[e] = 20;
   }
   current_temperature_bed = analog2tempBed(current_temperature_bed_raw);
@@ -1283,19 +1283,19 @@ void tp_init() {
   	static float degree[EXTRUDERS][2];
 	static millis_t checkmills;
 
-	//Время обнаружения пришло
+	//检测时间已到
 	if(checkmills < millis())
 	{
 		checkmills = millis() + 2000UL;
 		degree[e][0] = degree[e][1];
 		degree[e][1] = degHotend(e);
-		//Во время нагрева
-		//если (degTargetHotend (e) > 125)
+		//加热过程中
+		//if(degTargetHotend(e) > 125)
 		{
-			//Предыдущая температура была выше текущей температуры
+			//之前温度比当前温度高
 			if(degree[e][0] > degree[e][1])
 			{
-				//Разница температур превышает 15 градусов.
+				//温度差超过15  度
 				if(degree[e][0] - degree[e][1] > 20)
 				{
 					kill(PSTR("Drop Tamp"));
@@ -1548,7 +1548,7 @@ void DMA1_Channel1_IRQHandler(void)
 		      #define GEBED >=
 		    #endif
 		    if (current_temperature_bed_raw GEBED bed_maxttemp_raw) _temp_error(-1, PSTR(MSG_T_MAXTEMP), PSTR(MSG_ERR_MAXTEMP_BED));
-			//Паладин: Когда кровать с подогревом не подключена к розетке, отображается na.
+			//Paladin:热床没插上时，显示NA
 		    if (bed_minttemp_raw GEBED current_temperature_bed_raw){HMI_ShowTemperature(1, -27, -27); _temp_error(-1, PSTR(MSG_T_MINTEMP), PSTR(MSG_ERR_MINTEMP_BED));}
 		  #endif
 		}
@@ -1561,7 +1561,7 @@ void DMA1_Channel1_IRQHandler(void)
 		      #define GE0 >=
 		    #endif
 
-			//Паладин: несколько испытаний
+			//Paladin:多次检测
 	        if (current_temperature_raw[0] GE0 maxttemp_raw[0]) 
 			{
 				if(MaxTempCount < 10)
@@ -1602,7 +1602,7 @@ void DMA1_Channel1_IRQHandler(void)
 		    #endif
 		}
 		#endif
-		//Начать обнаружение
+		//启动检测
 		TIM3->CR1 |= TIM_CR1_CEN;
 	}
 }

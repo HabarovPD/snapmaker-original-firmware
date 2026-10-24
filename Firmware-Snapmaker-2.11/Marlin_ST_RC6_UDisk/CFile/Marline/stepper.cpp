@@ -91,7 +91,7 @@ static unsigned int cleaning_buffer_counter;
 static long counter_x, counter_y, counter_z, counter_e;
 volatile static unsigned long step_events_completed; // The number of step events executed in the current block
 
-//Паладин: сохранить текущий расчет шага двигателя.
+//Paladin:保存当前电机步数计算
 volatile long pCounter_X,pCounter_Y,pCounter_Z,pCounter_E;
 
 
@@ -571,7 +571,7 @@ void st_wake_up() {
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 }
 
-//Паладин: счетчик синхронизации
+//Paladin  :  同步计数器
 void Sync_PCounter(void)
 {
 	pCounter_X = count_position[X_AXIS];
@@ -580,7 +580,7 @@ void Sync_PCounter(void)
 	pCounter_E = count_position[E_AXIS];
 }
 
-//Паладин: расчет значения таймера
+//Paladin :  定时器值计算
 FORCE_INLINE unsigned short calc_timer(unsigned long step_rate) {
   unsigned short timer;
 
@@ -744,7 +744,7 @@ void TIM7_IRQHandler(void)
 {
 	TIM7->SR &= ~TIM_FLAG_Update;
 
-	//Паладин: только быстрая остановка, защищен от использования
+	//Paladin:quickstop  专用，屏蔽不使用
 	#if(0)
   if (cleaning_buffer_counter) {
     current_block = NULL;
@@ -758,7 +758,7 @@ void TIM7_IRQHandler(void)
   }
   #endif
 
-   //Системный запрос на остановку
+   //系统请求停止
   if(IsStoppingPrint() == true)
   {
   	current_block = NULL;
@@ -777,7 +777,7 @@ void TIM7_IRQHandler(void)
       counter_x = -(current_block->step_event_count >> 1);
       counter_y = counter_z = counter_e = counter_x;
       step_events_completed = 0;
-	  //Настройки лазера
+	  //激光设置
 	  if((MA_LASER_350 == MachineSelected) || (MA_LASER == MachineSelected))
 	  {
 	  	SetLaserPwm(current_block->LaserPwm);
@@ -795,7 +795,7 @@ void TIM7_IRQHandler(void)
       //   e_steps[current_block->active_extruder] = 0;
       // #endif
     }
-	//Паладин: нет блоков движения, нормальное обнаружение с задержкой.
+	//Paladin  :  无运动块，例常延时检测
     else {
       TIM7->ARR = 2000; // 1kHz.
       TIM7->CR1 |= TIM_CR1_CEN;
@@ -811,7 +811,7 @@ void TIM7_IRQHandler(void)
       if (check_endstops) update_endstops();
     #endif
 
-	//Паладин: включено полуавтоматическое повышение уровня.
+	//Paladin  :  半自动调平使能
 	#if(HAVE_PROBE == 1)
 	if(HalfAutoCalibrateState == 1)
 	{
@@ -865,7 +865,7 @@ void TIM7_IRQHandler(void)
         STEP_IF_COUNTER(e, E);
       #endif
 
-      //Паладин: разница в один шаг
+      //Paladin  :  单 步 差值
       #if(HAVE_FALIMENT_SENSOR == 1)
 	  DelE = (count_position[E_AXIS] == pCounter_E)?0:(count_position[E_AXIS] > pCounter_E?1:-1);
 	  SensorECounter += DelE;
@@ -883,7 +883,7 @@ void TIM7_IRQHandler(void)
     unsigned short timer;
     unsigned long step_rate;
 
-	//Триггер обнаружения материала
+	//触发物料检测
 	#if(1)
 	#if(HAVE_FALIMENT_SENSOR == 1)
 	if(FilamentCheckEnable == true)

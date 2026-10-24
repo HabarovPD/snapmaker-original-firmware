@@ -14,12 +14,12 @@
 #include "stm32f10x_conf.h"
 
 
-//Для входа в прерывание необходимо просмотреть файл .S.
+//中断入口需要查看.S  文件
 #define THIS_USART	USART3
 
 
 /********************************************
-Инициализация проверки ЧПУ
+初始化CNC   检测
 ********************************************/
 void CNCInit(void)
 {
@@ -81,7 +81,7 @@ void CNCInit(void)
 	FileFilter = FIL_CNC;
 	MachineSelected = MA_CNC;
 
-	//Обнаружение закрытия дверцы
+	//关闭门外罩检测
 	DisableDoorCheck();
 
 	#if(HAVE_HMI == 1)
@@ -91,9 +91,9 @@ void CNCInit(void)
 	//Add by Paladin:Update Acc according the machine
 	gcode_M201();
 
-	//самопроверка
+	//自检
 	SystemSelfCheck();
-	//Включите питание
+	//开启电源
 	if((SysFaultFlag & FAULT_FLAG_LOAD & FAULT_FLAG_BED & FAULT_FLAG_HEATER0))
 	{
 		MachineMode = WORK_MODE_IDLE;
@@ -101,7 +101,7 @@ void CNCInit(void)
 }
 
 /********************************************
-Обратная инициализация ЧПУ
+逆始化CNC
 ********************************************/
 void CNCDeint(void)
 {
@@ -147,7 +147,7 @@ void CNCDeint(void)
 
 
 /*****************************************************
-Инициализация переменных ЧПУ
+Cnc  变量初始化
 *****************************************************/
 void CncVariableInit(void)
 {
@@ -171,12 +171,12 @@ static uint8_t SendLen;
 static uint8_t SendIndex;
 
 /*****************************************************
-Скорость изменения отправки ЧПУ
+Cnc 发送改变转速
 *****************************************************/
 void CncSetRPM(uint16_t RPM)
 {
 	uint32_t statreg0, statreg1;
-	//Ожидание опустошения регистра передаваемых данных
+	//等待发送数据寄存器为空
 	do
 	{
 		statreg0 = THIS_USART->SR;
@@ -187,13 +187,13 @@ void CncSetRPM(uint16_t RPM)
 	uint8_t j;
 	uint8_t checksum;
 	i = 0;
-	//Баотоу
+	//包头
 	SendBuff[i++] = 0xcc;
-	//длина
+	//长度
 	SendBuff[i++] = 0;
-	//Заказ
+	//命令
 	SendBuff[i++] = 'S';
-	//данные
+	//数据
 	sprintf(strRPM, "%d", RPM);
 	j = 0;
 	while((strRPM[j] != 0) && (j < 5))
@@ -201,25 +201,25 @@ void CncSetRPM(uint16_t RPM)
 		SendBuff[i++] = strRPM[j++];
 	}
 
-	//Длина заправки
+	//重填长度
 	SendBuff[1] = i;
-	//Эффективность
+	//效验
 	checksum = 0;
 	for(j=3;j<i;j++)
 		checksum += SendBuff[j];
 	SendBuff[i++] = checksum;
 	
-	//Бао хвост
+	//包尾
 	SendBuff[i++] = 0xcd;
 
-	//Длина заправки
+	//重填长度
 	SendLen = i;
 	SendIndex = 0;
 	THIS_USART->CR1 |= USART_CR1_TXEIE;
 }
 
 /*****************************************************
-ЧПУ считывает текущую скорость
+Cnc  读取当前转速
 *****************************************************/
 void CncGetRPM()
 {
@@ -227,37 +227,37 @@ void CncGetRPM()
 	uint8_t j;
 	uint8_t checksum;
 	uint32_t statreg0, statreg1;
-	//Ожидание опустошения регистра передаваемых данных
+	//等待发送数据寄存器为空
 	do
 	{
 		statreg0 = THIS_USART->SR;
 		statreg1 = THIS_USART->SR;
 	}while((statreg0 != statreg1) && ((statreg0 & USART_SR_TXE) == 0));
 	i = 0;
-	//Баотоу
+	//包头
 	SendBuff[i++] = 0xcc;
-	//длина
+	//长度
 	SendBuff[i++] = 0;
-	//Заказ
+	//命令
 	SendBuff[i++] = 'R';
 	
-	//Эффективность
+	//效验
 	checksum = 0;
 	for(j=0;j<i;i++)
 		checksum += SendBuff[j];
 	SendBuff[i++] = checksum;
 	
-	//Бао хвост
+	//包尾
 	SendBuff[i++] = 0xcd;
 
-	//Длина заправки
+	//重填长度
 	SendLen = i;
 	
 	THIS_USART->CR1 |= USART_CR1_TXEIE;
 }
 
 /*****************************************************
-Инструкция по разбору ЧПУ
+Cnc  解析指令
 *****************************************************/
 short CNCGetCommand(unsigned char *pBuff)
 {
@@ -270,7 +270,7 @@ short CNCGetCommand(unsigned char *pBuff)
 	tmphead = ReadHead;
 	tmptail = ReadTail;
 	
-	//Нет данных
+	//没数据
 	if (tmphead == tmptail)
 	{
 		return (short)-1;
@@ -278,46 +278,46 @@ short CNCGetCommand(unsigned char *pBuff)
 
 	tmplen = (uint16_t)((tmphead + sizeof(ReadBuff)- tmptail) % sizeof(ReadBuff));
 	
-	//Длина данных достаточна
+	//数据长度足够
 	while(tmplen > 9)
 	{
 		if(ReadBuff[tmptail] != 0xCC)
 		{
 			tmptail = (tmptail + 1) % sizeof(ReadBuff);
 			tmplen--;
-			//Обновить указатель чтения
+			//更新读指针
 			ReadTail = tmptail;
 			continue;
 		}
 	
-		//Чтение длины пакета
+		//读取包长
 		uint8_t commandLen = ReadBuff[(tmptail + 1) % sizeof(ReadBuff)];
 		/*
-		//Ошибка проверки длины пакета
+		//包长效验错误
 		if((((commandLen >> 8) & 0xff) ^ (commandLen & 0xff)) != ReadBuff[(tmptail + 5) % sizeof(ReadBuff)])
 		{
 			tmptail = (tmptail + 2) % sizeof(ReadBuff);
-			тмлен = тмлен -2;
-			//Обновить указатель чтения
+			tmplen = tmplen - 2;
+			//更新读指针
 			ReadTail = tmptail;
 			continue;
 		}
 		*/
 
-		//достаточно буферизованных данных
+		//缓冲数据足够
 		if(commandLen <= (tmplen - 2))
 		{
-			//Копировать данные
+			//复制数据
 			for(i=0;i<(commandLen + 2);i++)
 			{
 				pBuff[i] = ReadBuff[tmptail];
 				tmptail = (tmptail + 1) % sizeof(ReadBuff);
 			}
 
-			//Обновить указатель чтения
+			//更新读指针
 			ReadTail = tmptail;
 
-			//проверять
+			//校验
 			checksum = 0;
 			for(i=0;i<(commandLen + 2);i++)
 				checksum += pBuff[i];
@@ -326,7 +326,7 @@ short CNCGetCommand(unsigned char *pBuff)
 				return (short)-1;
 			return commandLen + 2;
 		}
-		//Недостаточная длина данных
+		//数据长度不足
 		else
 		{
 			return (short)-1;
@@ -337,7 +337,7 @@ short CNCGetCommand(unsigned char *pBuff)
 }
 
 /*****************************************************
-ЧПУ считывает текущую скорость
+Cnc  读取当前转速
 *****************************************************/
 void CncCpuCommunicationProcess()
 {
@@ -378,7 +378,7 @@ void CncCpuCommunicationProcess()
 #endif
 
 /*****************************************************
-Процесс обработки с ЧПУ
+CNC  处理进程
 *****************************************************/
 void CncProcess(void)
 {
@@ -388,7 +388,7 @@ void CncProcess(void)
 		UDiskIdleProceess();
 		if (commands_in_queue < (BUFSIZE - 4)) get_available_commands();
 
-		//Модификация Paladin: Система не требует остановки, и в очереди есть инструкции для выполнения.
+		//Modify by Paladin:系统不要求停止，并且队列中有指令待执行
 		if ((commands_in_queue > 0) && (IsStoppingPrint() == false)) 
 		{
 			//Paladin

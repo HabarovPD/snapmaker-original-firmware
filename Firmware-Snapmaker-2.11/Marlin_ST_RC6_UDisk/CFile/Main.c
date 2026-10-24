@@ -41,14 +41,14 @@ void HeatTickInit(void)
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 71;
 	TIM_TimeBaseInitStruct.TIM_Period = 999;
 	TIM_TimeBaseInit(TIM6, &TIM_TimeBaseInitStruct);
-	ТИМ6->СР = 0;
+	TIM6->SR = 0;
 	TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
 	TIM_SelectOnePulseMode(TIM6, TIM_OPMode_Repetitive);
 
 	NVicInit.NVIC_IRQChannel = TIM6_IRQn;
 	NVicInit.NVIC_IRQChannelSubPriority = 0;
 	NVicInit.NVIC_IRQChannelPreemptionPriority = 2;
-	NVicInit.NVIC_IRQChannelCmd = ВКЛЮЧИТЬ;
+	NVicInit.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVicInit);
 	//TIM_Cmd(TIM6, ENABLE);
 	*/
@@ -97,7 +97,7 @@ void DelUpdateFile(void)
 	while((Tick - tmptick) < (TICK_PER_SECOND / 5));
 	do
 	{
-		//Тайм-аут операции
+		//操作超时
 		if(WaitUDisk() == (char)-1)
 			break;
 		if(FR_OK == f_mount(&UpdateFatfs, "0:\\", 1))
@@ -132,8 +132,8 @@ void GpioCheck(void)
   GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);
 
   GPIO_InitTypeDef GPIO_InitStruct;
-  //Выход
-  GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50 МГц;
+  //Output
+  GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
 
   GPIOA->BRR = GPIO_Pin_All;
@@ -145,52 +145,52 @@ void GpioCheck(void)
   #ifdef X_STEP_PIN
   GPIO_InitStruct.GPIO_Pin = X_STEP_PIN;
   GPIO_Init(X_STEP_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef X_DIR_PIN
   GPIO_InitStruct.GPIO_Pin = X_DIR_PIN;
   GPIO_Init(X_DIR_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef X_ENABLE_PIN
   GPIO_InitStruct.GPIO_Pin = X_ENABLE_PIN;
   GPIO_Init(X_ENABLE_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef Y_STEP_PIN
   GPIO_InitStruct.GPIO_Pin = Y_STEP_PIN;
   GPIO_Init(Y_STEP_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef Y_DIR_PIN
   GPIO_InitStruct.GPIO_Pin = Y_DIR_PIN;
   GPIO_Init(Y_DIR_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef Y_ENABLE_PIN
   GPIO_InitStruct.GPIO_Pin = Y_ENABLE_PIN;
   GPIO_Init(Y_ENABLE_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef Z_STEP_PIN
   GPIO_InitStruct.GPIO_Pin = Z_STEP_PIN;
   GPIO_Init(Z_STEP_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef Z_DIR_PIN
   GPIO_InitStruct.GPIO_Pin = Z_DIR_PIN;
   GPIO_Init(Z_DIR_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef Z_ENABLE_PIN
   GPIO_InitStruct.GPIO_Pin = Z_ENABLE_PIN;
   GPIO_Init(Z_ENABLE_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef E0_STEP_PIN
   GPIO_InitStruct.GPIO_Pin = E0_STEP_PIN;
   GPIO_Init(E0_STEP_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   GPIO_InitStruct.GPIO_Pin = GPIO_Pin_10;
   GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -201,32 +201,32 @@ void GpioCheck(void)
   #ifdef E0_DIR_PIN
   GPIO_InitStruct.GPIO_Pin = E0_DIR_PIN;
   GPIO_Init(E0_DIR_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef E0_ENABLE_PIN
   GPIO_InitStruct.GPIO_Pin = E0_ENABLE_PIN;
   GPIO_Init(E0_ENABLE_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef H_FAN1_PORT
   GPIO_InitStruct.GPIO_Pin = H_FAN1_PIN;
   GPIO_Init(H_FAN1_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef H_FAN2_PORT
   GPIO_InitStruct.GPIO_Pin = H_FAN2_PIN;
   GPIO_Init(H_FAN2_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef E0_ENABLE_PIN
   GPIO_InitStruct.GPIO_Pin = E0_ENABLE_PIN;
   GPIO_Init(E0_ENABLE_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef UART1_SELK1_PORT
   GPIO_InitStruct.GPIO_Pin = UART1_SELK1_PIN;
   GPIO_Init(UART1_SELK1_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   GPIO_InitStruct.GPIO_Pin = SHIELD_LED_PIN;
   GPIO_Init(SHIELD_LED_PORT, &GPIO_InitStruct);
@@ -243,17 +243,17 @@ void GpioCheck(void)
 
   GPIO_InitStruct.GPIO_Pin = HEATER_BED_PIN;
   GPIO_Init(HEATER_BED_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef MAIN_POWER_SUPPLY_PORT
   GPIO_InitStruct.GPIO_Pin = MAIN_POWER_SUPPLY_PIN;
   GPIO_Init(MAIN_POWER_SUPPLY_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   #ifdef STEPPER_POWER_SUPPLY_PORT
   GPIO_InitStruct.GPIO_Pin = STEPPER_POWER_SUPPLY_PIN;
   GPIO_Init(STEPPER_POWER_SUPPLY_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   GPIO_InitStruct.GPIO_Pin = HEATER_0_PIN;
   GPIO_Init(HEATER_0_PORT, &GPIO_InitStruct);
@@ -281,17 +281,17 @@ void GpioCheck(void)
   #ifdef X_MAX_PORT
   GPIO_InitStruct.GPIO_Pin = X_MAX_PIN;
   GPIO_Init(X_MAX_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
   
   #ifdef Y_MAX_PORT
   GPIO_InitStruct.GPIO_Pin = Y_MAX_PIN;
   GPIO_Init(Y_MAX_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
   
   #ifdef Z_MAX_PORT
   GPIO_InitStruct.GPIO_Pin = Z_MAX_PIN;
   GPIO_Init(Z_MAX_PORT, &GPIO_InitStruct);
-  #конец
+  #endif
 
   GPIO_InitStruct.GPIO_Pin = DOOR_PIN;
   GPIO_Init(DOOR_PORT, &GPIO_InitStruct);
@@ -320,7 +320,7 @@ void GpioCheck(void)
   GPIO_InitStruct.GPIO_Pin = BED_CHECK_PIN;
   GPIO_Init(BED_CHECK_PORT, &GPIO_InitStruct);
 
-  /*******************************************************/
+  /******************************************************/
 
   
 
@@ -367,10 +367,11 @@ void GpioCheck(void)
 
   #if(HAVE_ANDROID == 1)
   ANDROID_PWR_PORT->BSRR = ANDROID_PWR_PIN;
-  ANDROID_PWR_PORT-> BRR = ANDROID_PWR_PIN;
+  ANDROID_PWR_PORT->BRR = ANDROID_PWR_PIN;
 
   ANDROID_START_PORT->BSRR = ANDROID_START_PIN;
-  ANDROID_START_PORT->BRR = ANDROID_START_PIN; конец
+  ANDROID_START_PORT->BRR = ANDROID_START_PIN;
+  #endif
 
   
   MAIN_POWER_SUPPLY_PORT->BRR = MAIN_POWER_SUPPLY_PIN;
@@ -444,7 +445,7 @@ void GpioCheck(void)
   #endif
 }
 
-//Посвящён GD32 для повышения эффективности кода.
+//GD32  专用，提高代码效率
 void SetCodeEfficiency()
 {
 	uint32_t tmpReadback;
@@ -494,7 +495,7 @@ void Test()
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	TIM_OCInitTypeDef TIM_OCInitStruct;
 	TIM_BDTRInitTypeDef TIM_BDTRInitStruct;
-	//78 Гц, 128 уровень
+	//78HZ ，128  Level
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = 0;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Prescaler = 11999;

@@ -120,7 +120,7 @@ void CardReader::lsDive(const char *prepend, DIR *parent, const char * const mat
 	FILINFO fileinfo;
 	uint8_t cnt = 0;
 
-	//Каталог не открыт
+	//目录未打开
 	if(parent->fs == 0)
 		f_opendir(parent, rootpath);
 	
@@ -129,7 +129,7 @@ void CardReader::lsDive(const char *prepend, DIR *parent, const char * const mat
 	fileinfo.lfsize = sizeof(longFilename);
 	while(f_readdir(parent, &fileinfo) == FR_OK)
 	{
-		//найти папку
+		//找到文件夹
 		if((fileinfo.fattrib & AM_DIR) && (lsAction != LS_Count) && (lsAction != LS_GetFilename))
 		{
 			continue;
@@ -181,7 +181,7 @@ void CardReader::lsDive(const char *prepend, DIR *parent, const char * const mat
 				ExtName[1] = ExtName[1] - 'a' + 'A';
 			if(ExtName[2] >= 'a')
 				ExtName[2] = ExtName[2] - 'a' + 'A';
-			//файл G-кода
+			//Gcode文件
 			if(filter == FIL_GCODE)
 			{
 				if((ExtName[0]!='G') || (ExtName[1]!='C') || (ExtName[2]!='O')) continue;
@@ -200,7 +200,7 @@ void CardReader::lsDive(const char *prepend, DIR *parent, const char * const mat
 				break;
 				
 				case LS_SerialPrint:
-					//длинное имя файла
+					//长文件名
 					SERIAL_PROTOCOLLN(longFilename);
 
 					//SERIAL_PROTOCOLLN("\r\n");

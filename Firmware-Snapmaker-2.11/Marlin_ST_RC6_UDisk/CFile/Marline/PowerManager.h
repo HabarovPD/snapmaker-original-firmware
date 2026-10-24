@@ -18,31 +18,31 @@ typedef enum
 
 typedef struct
 {
-	//проверять
+	//校验
 	uint32_t CheckSum;
-	//Температура экструзионной головки
+	//挤出头温度
 	float HeaterTamp[4];
-	//скорость
+	//速度
 	float PrintFeedRate;
-	//пустая скорость бега
+	//空跑速度
 	float TravelFeedRate;
-	//Температура нагревательного слоя
+	//热床温度
 	float BedTamp;
-	//координировать
+	//坐标
 	float PositionData[NUM_AXIS];
-	//расположение файла
+	//文件位置
 	int FilePosition;
-	//рекорд времени
+	//时间记录
 	uint32_t accumulator;
-	//скорость вентилятора
+	//风扇速度
 	uint8_t FanSpeed;
-	//Флаг достоверности данных
+	//数据有效标志
 	uint8_t Valid;
-	//Тип машины
+	//机器类型
 	uint8_t MachineType;
-	//Распечатать источник данных
+	//打印数据源
 	uint8_t GCodeSource;
-	//имя файла
+	//文件名
 	char FileName[270];
 }strPowerPanicSave;
 

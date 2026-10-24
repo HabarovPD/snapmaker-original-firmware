@@ -396,7 +396,7 @@ void plan_init() {
   memset(position, 0, sizeof(position)); // clear position
   for (int i = 0; i < NUM_AXIS; i++) previous_speed[i] = 0.0;
   previous_nominal_speed = 0.0;
-  //Паладин: очистка данных блокировки движения
+  //Paladin:清除运动块数据
   memset(block_buffer, 0, sizeof(block_buffer));
 }
 
@@ -583,7 +583,7 @@ float junction_deviation = 0.1;
   {
   	idle();
   }
-  //Паладин: Если системный запрос прерван и вы печатаете в автономном режиме
+  //Paladin:如果系统请求中断，并且处于脱机打印中
   if((IsStoppingPrint() == true) && (card.isFileOpen()))
     return;
 
@@ -665,7 +665,7 @@ float junction_deviation = 0.1;
   block->steps[E_AXIS] *= extruder_multiplier[extruder];
   block->steps[E_AXIS] /= 100;
   block->step_event_count = max(block->steps[X_AXIS], max(block->steps[Y_AXIS], max(block->steps[Z_AXIS], block->steps[E_AXIS])));
-  //Паладин: сохранение позиции и скорости.
+  //Paladin  :  保存位置与速率
   block->FilePosition = GetCurrentCommandFilePosition();
   block->TravelFeedRate = GetG0FeedRate();
   block->PrintFeedRate = GetG1FeedRate();

@@ -514,7 +514,7 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
 #define MESH_BED_LEVELING    // Enable mesh bed leveling.
 
 #if ENABLED(MESH_BED_LEVELING)
-  #if(1)//тест
+  #if(1)//测试
   #define MESH_MIN_X 10
   #define MESH_MAX_X (115)
   #define MESH_MIN_Y 10

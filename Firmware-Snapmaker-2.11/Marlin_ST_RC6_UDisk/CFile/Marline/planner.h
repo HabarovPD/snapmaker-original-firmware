@@ -82,9 +82,9 @@ typedef struct {
   unsigned long final_rate;                          // The minimal rate at exit
   unsigned long acceleration_st;                     // acceleration steps/sec^2
 
-  //Paladin: номер строки текущего исполняемого файла.
+  //Paladin:当前执行的文件行号
   unsigned long FilePosition;
-  //Паладин:оценка
+  //Paladin:速率
   float PrintFeedRate;
   float TravelFeedRate;
 

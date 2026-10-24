@@ -14,7 +14,7 @@
 #include "stm32f10x_conf.h"
 
 /*****************************************************
-Распечатать инициализацию переменной
+打印变量初始化
 *****************************************************/
 void PrintVariableInit(void)
 {
@@ -28,7 +28,7 @@ void PrintVariableInit(void)
 
 
 /********************************************
-Инициализация 3D-печати
+初始化3D  打印
 ********************************************/
 void PrintInit(void)
 {
@@ -49,7 +49,7 @@ void PrintInit(void)
 	GPIOB->BRR = GPIO_Pin_1;
 	#endif
 
-	//Инициализация шагового двигателя экструзии
+	//挤出步进 电机初始化
 	#if(SNAP_OLD_BASE == 0)
 	#ifdef E0_STEP_PORT
 	GPIO_InitStruct.GPIO_Pin = E0_STEP_PIN;
@@ -85,7 +85,7 @@ void PrintInit(void)
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
 	TIM_OCInitTypeDef TIM_OCInitStruct;
 	TIM_BDTRInitTypeDef TIM_BDTRInitStruct;
-	//78 Гц, 128 уровень
+	//78HZ ，128  Level
 	TIM_TimeBaseInitStruct.TIM_ClockDivision = 0;
 	TIM_TimeBaseInitStruct.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_TimeBaseInitStruct.TIM_Prescaler = SystemCoreClock / 1000000 - 1;
@@ -123,30 +123,30 @@ void PrintInit(void)
 	HMI_ChangePage(PAGE_PRINT);
 	#endif
 
-	//Включить определение температуры
+	//开启温度检测
 	#if(SNAP_OLD_BASE == 0)
 	DMA_Cmd(DMA1_Channel1, ENABLE);
 	TIM_Cmd(TIM3, ENABLE);
 	#endif
 	
-	//Обнаружение материала
+	//物料检测
 	FilamentManagerInit();
 
-	//Обнаружение закрытия дверцы
+	//关闭门外罩检测
 	DisableDoorCheck();
 
 	E0_ENABLE_PORT->BRR = E0_ENABLE_PIN;
-	//Добавлено Paladin: Обновить акк согласно машине
+	//Add by Paladin:Update Acc according the machine
 	gcode_M201();
 
-	//самопроверка
+	//自检
 	SystemSelfCheck();
-	//Включите питание
+	//开启电源
 	if((SysFaultFlag & FAULT_FLAG_LOAD & FAULT_FLAG_BED & FAULT_FLAG_HEATER0))
 	{
 		MachineMode = WORK_MODE_IDLE;
 	}
-	//инициализация переменной
+	//变量初始化
 	PrintVariableInit();
 
 	#ifdef H_FAN2_PORT
@@ -155,7 +155,7 @@ void PrintInit(void)
 }
 
 /********************************************
-Деинициализация 3D-печати
+逆始化3D  打印
 ********************************************/
 void PrintDeint(void)
 {
@@ -185,7 +185,7 @@ void PrintDeint(void)
 	GPIO_Init(HEATER_BED_PORT, &GPIO_InitStruct);
 	#endif
 
-	//Отключить определение температуры
+	//关闭温度检测
 	DMA_Cmd(DMA1_Channel1, DISABLE);
 	TIM_Cmd(TIM3, DISABLE);
 
@@ -194,7 +194,7 @@ void PrintDeint(void)
 
 
 /*****************************************************
-процесс обработки печати
+打印处理进程
 *****************************************************/
 void PrintProcess(void)
 {
@@ -204,10 +204,10 @@ void PrintProcess(void)
 		UDiskIdleProceess();
 		if (commands_in_queue < (BUFSIZE - 4)) get_available_commands();
 
-		//Модификация Paladin: Система не требует остановки, и в очереди есть инструкции для выполнения.
+		//Modify by Paladin:系统不要求停止，并且队列中有指令待执行
 		if ((commands_in_queue > 0) && (IsStoppingPrint() == false)) 
 		{
-			//Паладин
+			//Paladin
 			process_next_command();
 			DispatchComandIndex();
 			ShieldLedOn();
@@ -221,7 +221,7 @@ void PrintProcess(void)
 		 		ShieldFanOn();
 			}
 		}
-		//Паладин
+		//Paladin
 		FinishPrintProcess();
 		PauseProcess();
 		checkHitEndstops();

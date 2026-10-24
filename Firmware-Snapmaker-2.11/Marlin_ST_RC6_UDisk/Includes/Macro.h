@@ -5,7 +5,7 @@
 #define TICK_ADC_FREQ	10000
 #define UTICK_PER_SECOND	1000
 
-//ï¿½ï¿½ï¿½Ú»ï¿½ï¿½å¶¨ï¿½ï¿½
+//´®¿Ú»º³å¶¨Òå
 #define RINGBUFF_SEND_SIZE	1024
 #define RINGBUFF_RECV_SIZE	(2*1024)
 
