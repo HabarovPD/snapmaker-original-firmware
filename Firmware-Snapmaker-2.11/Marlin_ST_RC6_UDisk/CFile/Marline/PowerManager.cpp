@@ -15,7 +15,7 @@
 
 #include "stm32f10x_conf.h"
 
-//Flash  保存位置定义 Сохранить определение местоположения
+//Flash  保存位置定义
 #define FLASH_POWERPANIC_ADDR	0x802A800
 #define FLASH_PAGE_SIZE	2048
 #define FLASH_RECORD_PAGES	2
@@ -25,7 +25,7 @@
 #define THIS_IRQN		EXTI0_IRQn
 #define SOURCE_PORT		GPIO_PortSourceGPIOE
 #define SOURCE_PIN		GPIO_PinSource0
-//中断入口需要查看.S  文件 Точку входа прерывания необходимо проверить в файле .S.
+//中断入口需要查看.S  文件
 
 extern void sync_plan_position();
 extern void gcode_M104();
@@ -45,7 +45,7 @@ extern bool relative_mode;
 
 static strPowerPanicSave tmpPowerPanicData;
 
-//下个写入数据索引 Следующая запись индекса данных
+//下个写入数据索引
 uint32_t WriteIndex;
 
 const uint32_t PortTable[] = 
@@ -70,7 +70,7 @@ const uint32_t PortRccTable[] =
 
 
 /********************************************
-断电初始化 Инициализация выключения питания
+断电初始化
 ********************************************/
 void PowerManagerInit(void)
 {
@@ -110,7 +110,7 @@ void PowerManagerInit(void)
 }
 
 /********************************************
-使能断电检测 Включить обнаружение сбоев питания
+使能断电检测
 ********************************************/
 void EnablePowerPanicCheck()
 {
@@ -125,7 +125,7 @@ void EnablePowerPanicCheck()
 }
 
 /********************************************
-禁能断电检测 Обнаружение отключения питания
+禁能断电检测
 ********************************************/
 void DisablePowerPanicCheck()
 {
@@ -139,7 +139,7 @@ void DisablePowerPanicCheck()
 }
 
 /********************************************
-清空所有断电数据 Удалите все данные об отключении электроэнергии.
+清空所有断电数据
 ********************************************/
 void ClearBreakPointData(void)
 {
@@ -156,7 +156,7 @@ void ClearBreakPointData(void)
 }
 
 /********************************************
-保存断电数据 Сохранение данных о сбоях электропитания
+保存断电数据
 ********************************************/
 void SaveBreakPointData(void)
 {
@@ -166,16 +166,16 @@ void SaveBreakPointData(void)
 	uint32_t u32data;
 	uint8_t *pBuff;
 	
-	//记录大小 Размер записи
+	//记录大小
 	RecordSize = (sizeof(strPowerPanicSave) + 8);
 
-	//写一半标识 Напишите половину балла
+	//写一半标识
 	addr = (WriteIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 	u32data = 0x5555;
 	FLASH_Unlock();
 	FLASH_ProgramWord(addr, u32data);
 
-	//地址 адрес
+	//地址
 	addr = (WriteIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + 8 + FLASH_POWERPANIC_ADDR;
 	
 	pBuff = (uint8_t*)&PowerPanicData;
@@ -193,7 +193,7 @@ void SaveBreakPointData(void)
 		addr = addr + 4;
 	}
 
-	//写完整标识 Напишите полный идентификатор.
+	//写完整标识
 	addr = (WriteIndex / RECORD_COUNT_PER_PAGE) * 2048 + (WriteIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR + 4;
 	u32data = 0x5555;
 	FLASH_ProgramHalfWord(addr, u32data);
@@ -201,7 +201,7 @@ void SaveBreakPointData(void)
 }
 
 /********************************************
-标置断电数据无效 Неверные данные о сбое электропитания
+标置断电数据无效
 ********************************************/
 void MaskBreadkPointData(void)
 {
@@ -210,14 +210,14 @@ void MaskBreadkPointData(void)
 	uint32_t addr;
 	uint16_t preIndex;
 	
-	//记录大小 Размер записи
+	//记录大小
 	RecordSize = (sizeof(strPowerPanicSave) + 8);
 	//记录总空间
 	TotalCount = RECORD_COUNT_PER_PAGE * FLASH_RECORD_PAGES;
 	
 	preIndex = (WriteIndex + TotalCount - 1) % sizeof(TotalCount);
 
-	//Рассчитать адрес
+	//计算地址
 	addr = (preIndex / RECORD_COUNT_PER_PAGE) * 2048 + (preIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 	FLASH_Unlock();
 	FLASH_ProgramWord(addr, 0);
@@ -232,16 +232,6 @@ Flag:0x0000表示数据已读取并清空
        0x5555表示有效数据
        0xFFFF表示为空(  可写)
 查找原理:  从头开始查找空块，然后从空块返回查找无效块或有效块，即最后一个非空块
-
-Чтение данных после отключения питания
-Использование циклического метода сохранения
-Первый байт хранит флаг
-Флаг: 0x0000 указывает на то, что данные были прочитаны и очищены
-0x5555 указывает на допустимые данные
-0xFFFF указывает на нулевой (доступен для записи)
-Принцип поиска: Начинаем поиск пустых блоков с начала,
-	затем возвращаемся от пустых блоков для поиска недопустимых
-	или допустимых блоков, т.е. последнего непустого блока.
 ********************************************/
 void LoadBreakPointData(void)
 {
@@ -253,15 +243,15 @@ void LoadBreakPointData(void)
 	uint32_t TotalCount;
 	uint32_t Flag;
 
-	//记录大小 Размер записи
+	//记录大小
 	RecordSize = (sizeof(strPowerPanicSave) + 8);
-	//记录总空间 Общее пространство для записей
+	//记录总空间
 	TotalCount = RECORD_COUNT_PER_PAGE * FLASH_RECORD_PAGES;
 
-	//查找空块 Найти пустые блоки
+	//查找空块
 	for(i=0;i<TotalCount;i++)
 	{
-		//计算地址 Рассчитать адрес
+		//计算地址
 		addr = (i / RECORD_COUNT_PER_PAGE) * 2048 + (i % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 		Flag = *((uint32_t*)addr);
 		if(Flag == 0xffffffff)
@@ -271,10 +261,10 @@ void LoadBreakPointData(void)
 		}
 	}
 
-	//查找最后一个非空块 Найдите последний непустой блок
+	//查找最后一个非空块
 	for(i=0;i<TotalCount;i++)
 	{
-		//计算地址 Рассчитать адрес
+		//计算地址
 		addr = (tmpIndex / RECORD_COUNT_PER_PAGE) * 2048 + (tmpIndex % RECORD_COUNT_PER_PAGE) * RecordSize + FLASH_POWERPANIC_ADDR;
 		Flag = *((uint32_t*)addr);
 		if(Flag != 0xffffffff)

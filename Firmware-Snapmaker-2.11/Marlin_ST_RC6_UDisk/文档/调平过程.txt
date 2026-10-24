@@ -1,0 +1,36 @@
+声明：
+P1：海平面校准点
+P2，P3，P4：相对于P1点的校准平面
+
+变量：
+MeshPointZ[0]：对应P4点Z座标，缓存
+MeshPointZ[1]：对应P2点Z座标，缓存
+MeshPointZ[2]：对应P1点Z座标，缓存
+MeshPointZ[3]：对应P3点Z座标，缓存
+
+调平过程：
+1、初始化：
+	（1）Z轴回原点
+	（2）MeshPoint[2]设置为-home_offset[Z_AXIS]
+	（3）设置当前坐标为MeshPoint[2]的值
+
+
+2、调整P1点：
+	（1）Z轴以相对位置方式上升2MM
+	（2）XY以绝对坐标方式，移动到指定调整座标
+	（3）如果PointIndex不为2，Z轴以绝对坐标方式移动到坐标为0的位置；否则Z轴以相对位置方式下降2MM
+	（4）通过G92设置当前Z坐标为MeshPoint[2]
+	（5）更改PointIndex值为2
+
+	每次调节Z轴座标时，MeshPoint[2]值与Z轴坐标保护一致
+
+
+3、调整P2，P3，P4点：
+	（1）Z轴以相对位置方式上升2MM
+	（2）XY以绝对坐标方式，移动到指定调整座标
+	（3）Z轴以相对位置方式下降2MM
+	（4）如果PointIndex为2，执行G92 Z0，把Z轴当前位置设置为0
+	（5）以绝对坐标方式，移动到之前设定的Z坐标
+	（6）更改PointIndex值
+
+	每次调节Z轴坐标时，MeshPoint[PointIndex]值与Z轴坐标值保持一致
