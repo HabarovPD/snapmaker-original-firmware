@@ -61,6 +61,7 @@ for the flash map, every make target and recovery options.
 | Path | Contents |
 |------|----------|
 | `Firmware-Snapmaker-2.11/Marlin_ST_RC6_UDisk/` | Firmware sources, `Makefile`, `gcc/` (linker script, startup, OpenOCD config, `Update.Bin` packer, boot stub) |
+| `bins/Snapmaker-2.11-gcc/` | Prebuilt binaries of this GCC build (F103 and F105) with flashing instructions |
 | `bins/Firmware GD32Base-2.11 bin/` | Official 2.11 `Update.Bin` with changelog and upgrade instructions |
 | `bins/klipper bins/` | Prebuilt Klipper images for this board (`b<bootloader KiB>_c<crystal MHz>`) |
 | `assets-20210120/` | CAM post-processors and tool libraries (ArtCAM, Aspire, FreeCAD, Fusion 360, VCarve) |
@@ -68,5 +69,6 @@ for the flash map, every make target and recovery options.
 
 ## License
 
-Marlin is licensed under GPLv3, and so is this firmware as a derivative work.
-The ST libraries keep their own licenses (see `Libraries/`).
+Marlin is licensed under GPLv3, and so is this firmware as a derivative work;
+see [`LICENSE`](LICENSE). The ST libraries keep their own licenses
+(see `Firmware-Snapmaker-2.11/Marlin_ST_RC6_UDisk/Libraries/`).
