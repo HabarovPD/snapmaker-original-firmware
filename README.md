@@ -29,7 +29,7 @@ and printing over the USB cable from a PC are unchanged.
 ## Download
 
 Prebuilt binaries are in the latest release:
-**[v2.11-gcc1](https://github.com/HabarovPD/snapmaker-original-firmware/releases/tag/v2.11-gcc1)**
+**[v2.11-gcc2](https://github.com/HabarovPD/snapmaker-original-firmware/releases/tag/v2.11-gcc2)**
 ([all releases](https://github.com/HabarovPD/snapmaker-original-firmware/releases)).
 The same files are also in [`bins/Snapmaker-2.11-gcc/`](bins/Snapmaker-2.11-gcc/),
 together with flashing instructions.
@@ -52,6 +52,32 @@ Connect the board's SWD header to the ST-Link: SWDIO, SWCLK, GND. Power the
 printer from its own supply. See
 [`Firmware-Snapmaker-2.11/Marlin_ST_RC6_UDisk/BUILD.md`](Firmware-Snapmaker-2.11/Marlin_ST_RC6_UDisk/BUILD.md)
 for the flash map, every make target and recovery options.
+
+## Bed leveling
+
+Mesh bed leveling uses a 7x7 grid over X/Y 10..115 mm. Probing is manual,
+with a sheet of paper, from a host console over USB (Pronterface, OctoPrint
+and so on). Heights are measured from the Z endstop, which sits about 5.7 mm
+below the bed surface.
+
+| Command | Action |
+|---------|--------|
+| `G29 S1` | Home, then go to point 1, about 2.3 mm above the bed |
+| `G29 S2` | Store this point and go to the next one, 1 mm above the last height |
+| `G29 S5` | Home, then go to the bed center to set only the Z offset |
+| `G29 S6` | Store the Z offset: the current nozzle height becomes Z0 |
+| `G29` | Print the mesh |
+
+Between commands, jog Z down until the nozzle grips the paper
+(`G91`, `G1 Z-0.05`, `G90`). After the 49th `G29 S2` the bed center becomes
+Z0, the home offset (`M206 Z`) is set from it, the settings are saved to
+EEPROM and the printer homes. `G29 S6` saves too. The offset can also be set
+directly: `M206 Z-5.737`, then `M500`. The default after a settings reset is
+-5.737.
+
+Calibration from the touchscreen still measures 4 points. They go to the mesh
+corners, the rest of the grid is interpolated, and this replaces a 7x7 mesh
+probed with `G29`.
 
 ## Tool head pinout
 

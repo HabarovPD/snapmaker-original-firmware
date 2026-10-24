@@ -1,6 +1,6 @@
-# Snapmaker Original firmware 2.11: GCC build, release 2.11-gcc1
+# Snapmaker Original firmware 2.11: GCC build, release 2.11-gcc2
 
-Prebuilt from commit `816598c` of this repository. **Use at your own risk**: see
+Prebuilt from commit `8b9dec6` of this repository. **Use at your own risk**: see
 the warning in the [main README](../../README.md).
 
 ## F103: GD32F103 / STM32F103 high-density, 16 MHz crystal (tested on hardware)
@@ -41,7 +41,12 @@ openocd -f interface/stlink.cfg -c "set CPUTAPID 0" -f target/stm32f1x.cfg \
 ST-Link Utility work too: open the file and set the start address from the
 table above.
 
-On first boot the settings are empty, so the firmware loads its defaults.
-Calibrate, then save with `M500`.
+On first boot the settings are empty, so the firmware loads its defaults
+(Z home offset -5.737). Calibrate, then save with `M500`.
+
+Updating from 2.11-gcc1 keeps the settings, but the old 2x2 mesh does not
+fit the new 7x7 grid and is cleared. The old Z home offset (usually -8) is
+kept: set it with `G29 S5` / `G29 S6` or `M206 Z-5.737` + `M500`, then
+redo the mesh with `G29 S1`. See [Bed leveling](../../README.md#bed-leveling).
 
 Check the files with `sha256sum -c SHA256SUMS.txt`.
