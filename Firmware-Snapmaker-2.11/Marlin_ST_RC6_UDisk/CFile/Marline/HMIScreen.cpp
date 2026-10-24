@@ -1025,10 +1025,11 @@ void HMICommandProcess(void)
 						
 						HMICommandSave = 1;
 
+						//P4..P1 are the mesh corners
 						MeshPointZ[0] = mbl.z_values[0][0] - home_offset[Z_AXIS];
-						MeshPointZ[2] = mbl.z_values[1][0] - home_offset[Z_AXIS];
-						MeshPointZ[1] = mbl.z_values[0][1] - home_offset[Z_AXIS];
-						MeshPointZ[3] = mbl.z_values[1][1] - home_offset[Z_AXIS];
+						MeshPointZ[2] = mbl.z_values[MESH_NUM_Y_POINTS - 1][0] - home_offset[Z_AXIS];
+						MeshPointZ[1] = mbl.z_values[0][MESH_NUM_X_POINTS - 1] - home_offset[Z_AXIS];
+						MeshPointZ[3] = mbl.z_values[MESH_NUM_Y_POINTS - 1][MESH_NUM_X_POINTS - 1] - home_offset[Z_AXIS];
 
 						HMI_ChangePage(PAGE_CALIBRATE1);
 					}
@@ -1095,17 +1096,9 @@ void HMICommandProcess(void)
 						//切换等待界面
 						HMI_ChangePage(PAGE_ZCENTER);
 
-						//P1
-						mbl.set_z(0, 1, MeshPointZ[2]);
-
-						//P2
-						mbl.set_z(1, 1, MeshPointZ[3]);
-						
-						//P3
-						mbl.set_z(1, 0, MeshPointZ[1]);
-
-						//P4
-						mbl.set_z(0, 0, MeshPointZ[0]);
+						//P4, P3, P1, P2 are the corners, the rest is interpolated
+						mbl.set_from_corners(MeshPointZ[0], MeshPointZ[1],
+						                     MeshPointZ[2], MeshPointZ[3]);
 
 						//设置Zoffset
 						float X, Y;
@@ -1117,17 +1110,9 @@ void HMICommandProcess(void)
 						current_command_args = tmpBuff;
 						gcode_M206();
 
-						//P1
-						mbl.set_z(0, 1, MeshPointZ[2] - DelZ);
-
-						//P2
-						mbl.set_z(1, 1, MeshPointZ[3] - DelZ);
-						
-						//P3
-						mbl.set_z(1, 0, MeshPointZ[1] - DelZ);
-
-						//P4
-						mbl.set_z(0, 0, MeshPointZ[0] - DelZ);
+						//P4, P3, P1, P2 are the corners, the rest is interpolated
+						mbl.set_from_corners(MeshPointZ[0] - DelZ, MeshPointZ[1] - DelZ,
+						                     MeshPointZ[2] - DelZ, MeshPointZ[3] - DelZ);
 
 						//回原点
 						mbl.active = true;

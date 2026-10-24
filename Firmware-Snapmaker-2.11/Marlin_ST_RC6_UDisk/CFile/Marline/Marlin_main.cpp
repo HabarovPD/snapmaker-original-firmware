@@ -3144,31 +3144,47 @@ inline void gcode_G28() {
 
 #if ENABLED(MESH_BED_LEVELING)
 
-enum MeshLevelingState { MeshReport, MeshStart, MeshNext, MeshSet, MeshSetZOffset };
+enum MeshLevelingState { MeshReport, MeshStart, MeshNext, MeshSet, MeshSetZOffset,
+                         MeshHomeOffsetStart, MeshHomeOffsetSave };
 
-inline void _mbl_goto_xy(float x, float y) {
+/**
+ * Move to mesh point (x, y) at height z above the Z endstop.
+ * Z is raised first and never lowered before the XY move, so the
+ * nozzle does not drag over the bed.
+ */
+inline void _mbl_goto_xy(float x, float y, float z) {
     saved_feedrate = feedrate;
     feedrate = homing_feedrate[X_AXIS];
 
-    current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-#if MIN_Z_HEIGHT_FOR_HOMING > 0
-        + MIN_Z_HEIGHT_FOR_HOMING
-#endif
-        ;
-    line_to_current_position();
+    float z_target = z + home_offset[Z_AXIS];
+    if (current_position[Z_AXIS] < z_target) {
+        current_position[Z_AXIS] = z_target;
+        line_to_current_position();
+    }
 
     current_position[X_AXIS] = x + home_offset[X_AXIS];
     current_position[Y_AXIS] = y + home_offset[Y_AXIS];
     line_to_current_position();
 
-#if MIN_Z_HEIGHT_FOR_HOMING > 0
-    current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+    current_position[Z_AXIS] = z_target;
     line_to_current_position();
-#endif
 
     feedrate = saved_feedrate;
     st_synchronize();
 }
+
+// Raise Z by dz from the current position
+inline void _mbl_raise(float dz) {
+    saved_feedrate = feedrate;
+    feedrate = homing_feedrate[Z_AXIS];
+    current_position[Z_AXIS] += dz;
+    line_to_current_position();
+    feedrate = saved_feedrate;
+    st_synchronize();
+}
+
+inline float _mbl_center_x() { return (MESH_MIN_X + MESH_MAX_X) / 2.0f; }
+inline float _mbl_center_y() { return (MESH_MIN_Y + MESH_MAX_Y) / 2.0f; }
 
 /**
  * G29: Mesh-based Z probe, probes a grid and produces a
@@ -3181,6 +3197,13 @@ inline void _mbl_goto_xy(float x, float y) {
  *  S2              Probe the next mesh point
  *  S3 Xn Yn Zn.nn  Manually modify a single point
  *  S4 Zn.nn        Set z offset. Positive away from bed, negative closer to bed.
+ *  S5              Start Z home offset calibration: home, go to the bed center
+ *  S6              Save the Z home offset so the current nozzle height becomes Z0
+ *
+ * Manual probing (S1/S2 and S5/S6): jog Z down to a sheet of paper
+ * (G91, G1 Z-0.05, G90), then send the next command. When the last mesh
+ * point is done the bed center becomes Z0, the home offset (M206 Z) is
+ * set from it and the settings are saved to EEPROM.
  *
  * The S0 report the points as below
  *
@@ -3194,8 +3217,8 @@ inline void gcode_G29() {
 
     static int probe_point = -1;
     MeshLevelingState state = code_seen('S') ? (MeshLevelingState)code_value_short() : MeshReport;
-    if (state > 4) {
-        SERIAL_PROTOCOLLNPGM("S out of range (0-4).");
+    if (state > MeshHomeOffsetSave) {
+        SERIAL_PROTOCOLLNPGM("S out of range (0-6).");
         return;
     }
 
@@ -3239,36 +3262,75 @@ inline void gcode_G29() {
             }
             // For each G29 S2...
             if (probe_point == 0) {
-                // For the intial G29 S2 make Z a positive value (e.g., 4.0)
-                current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
-                sync_plan_position();
+                // Probe raw heights: G28 turned the mesh back on
+                mbl.active = false;
+                z = MESH_HOME_SEARCH_Z;
             }
             else {
-                // For G29 S2 after adjusting Z.
-                mbl.set_zigzag_z(probe_point - 1, current_position[Z_AXIS]);
+                // For G29 S2 after adjusting Z: store the height above the endstop
+                z = current_position[Z_AXIS] - home_offset[Z_AXIS];
+                mbl.set_zigzag_z(probe_point - 1, z);
+                SERIAL_PROTOCOLPGM("Point ");
+                SERIAL_PROTOCOL(probe_point);
+                SERIAL_PROTOCOLPGM(" Z=");
+                SERIAL_PROTOCOL_F(z, 3);
+                SERIAL_EOL;
+                z += MESH_PROBE_LIFT;
             }
-            // If there's another point to sample, move there with optional lift.
+            // If there's another point to sample, move there with a lift.
             if (probe_point < (MESH_NUM_X_POINTS) * (MESH_NUM_Y_POINTS)) {
                 mbl.zigzag(probe_point, ix, iy);
-                _mbl_goto_xy(mbl.get_x(ix), mbl.get_y(iy));
+                _mbl_goto_xy(mbl.get_x(ix), mbl.get_y(iy), z);
                 probe_point++;
+                SERIAL_PROTOCOLPGM("Probing point ");
+                SERIAL_PROTOCOL(probe_point);
+                SERIAL_PROTOCOLPGM(" of " STRINGIFY(MESH_NUM_X_POINTS) "x" STRINGIFY(MESH_NUM_Y_POINTS));
+                SERIAL_EOL;
             }
             else {
-                // One last "return to the bed" (as originally coded) at completion
-                current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-#if MIN_Z_HEIGHT_FOR_HOMING > 0
-                    + MIN_Z_HEIGHT_FOR_HOMING
-#endif
-                    ;
-                line_to_current_position();
-                st_synchronize();
+                _mbl_raise(2);
 
-                // After recording the last point, activate the mbl and home
+                // Make the bed center Z0: move the center height into the
+                // home offset and keep only the deviations in the mesh
+                mbl.z_offset = 0;
+                z = mbl.get_z(_mbl_center_x(), _mbl_center_y());
+                for (iy = 0; iy < MESH_NUM_Y_POINTS; iy++)
+                    for (ix = 0; ix < MESH_NUM_X_POINTS; ix++)
+                        mbl.z_values[iy][ix] -= z;
+                set_home_offset(Z_AXIS, -z);
+                sync_plan_position();
+
                 SERIAL_PROTOCOLLNPGM("Mesh probing done.");
+                SERIAL_PROTOCOLPGM("Home offset Z: ");
+                SERIAL_PROTOCOL_F(-z, 3);
+                SERIAL_EOL;
                 probe_point = -1;
                 mbl.active = true;
-                enqueue_and_echo_commands_P(PSTR("G28"));
+                Config_StoreSettings();
+                enqueue_and_echo_commands_P(PSTR("G28\nG29"));
             }
+            break;
+
+        case MeshHomeOffsetStart:
+            probe_point = -1;
+            gcode_G28();
+            mbl.active = false;
+            _mbl_goto_xy(_mbl_center_x(), _mbl_center_y(), MESH_HOME_SEARCH_Z);
+            SERIAL_PROTOCOLLNPGM("Jog Z down to the paper, then send G29 S6");
+            break;
+
+        case MeshHomeOffsetSave:
+            // Z0 at the center must be the current nozzle height. The planner
+            // adds the mesh, so: offset = mesh(center) - height above endstop
+            z = current_position[Z_AXIS] - home_offset[Z_AXIS];
+            set_home_offset(Z_AXIS, mbl.get_z(_mbl_center_x(), _mbl_center_y()) - z);
+            sync_plan_position();
+            SERIAL_PROTOCOLPGM("Home offset Z: ");
+            SERIAL_PROTOCOL_F(home_offset[Z_AXIS], 3);
+            SERIAL_EOL;
+            _mbl_raise(2);
+            Config_StoreSettings();
+            enqueue_and_echo_commands_P(PSTR("G28"));
             break;
 
         case MeshSet:

@@ -619,7 +619,7 @@ void Config_ResetDefault() {
 
   home_offset[X_AXIS] = -4.5;
   home_offset[Y_AXIS] = -3.5; 
-  home_offset[Z_AXIS] = -8; // -6 was too small. It might cause the nozzle hit the heated bed. @whimsycwd
+  home_offset[Z_AXIS] = Z_HOME_OFFSET_DEFAULT;
   base_max_pos[X_AXIS] = X_MAX_POS;
   base_max_pos[Y_AXIS] = Y_MAX_POS; 
   base_max_pos[Z_AXIS] = Z_MAX_POS; 

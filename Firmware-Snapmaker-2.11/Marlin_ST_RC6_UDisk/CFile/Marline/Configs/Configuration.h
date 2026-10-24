@@ -492,6 +492,9 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
 #define Y_MAX_POS 129 // Move +2mm after hitting the endstop @whimsycwd  Caution!, if we don't set this, it will cause the Y125 hit module in specific situation. The module can't move to that physical length. 
 #define Z_MAX_POS 128
 #define Z_LONG_MODULE_POS 221
+// Default Z home offset: the endstop is 5.737 mm below the bed surface
+// (position_endstop measured with Klipper). Used when the settings are reset.
+#define Z_HOME_OFFSET_DEFAULT -5.737
 
 
 //===========================================================================
@@ -519,9 +522,12 @@ const bool Z_MIN_PROBE_ENDSTOP_INVERTING = true; // set to true to invert the lo
   #define MESH_MAX_X (115)
   #define MESH_MIN_Y 10
   #define MESH_MAX_Y (115)
-  #define MESH_NUM_X_POINTS 2  // Don't use more than 7 points per axis, implementation limited.
-  #define MESH_NUM_Y_POINTS 2
-  #define MESH_HOME_SEARCH_Z 0  // Z after Home, bed somewhere below but above 0.0.
+  #define MESH_NUM_X_POINTS 7  // Don't use more than 7 points per axis, implementation limited.
+  #define MESH_NUM_Y_POINTS 7
+  // G29 heights are measured from the Z endstop (Z with home_offset removed).
+  // The bed is ~5.7 mm above the endstop, so 8 starts ~2.3 mm above the bed.
+  #define MESH_HOME_SEARCH_Z 8  // Height above the Z endstop to travel to the first point.
+  #define MESH_PROBE_LIFT 1.0   // Start each next point this much above the previous one.
   #else
   #define MESH_MIN_X 15
   #define MESH_MAX_X (85)

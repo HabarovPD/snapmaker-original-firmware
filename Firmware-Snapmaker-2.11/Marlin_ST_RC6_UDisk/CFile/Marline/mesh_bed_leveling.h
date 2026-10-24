@@ -41,6 +41,19 @@
     float get_y(int i) { return MESH_MIN_Y + (MESH_Y_DIST) * i; }
     void set_z(int ix, int iy, float z) { z_values[iy][ix] = z; }
 
+    // Fill the whole grid by bilinear interpolation between the four corners
+    // (the touchscreen calibration measures only the corners).
+    void set_from_corners(float z_x0y0, float z_x1y0, float z_x0y1, float z_x1y1) {
+      for (int y = 0; y < MESH_NUM_Y_POINTS; y++) {
+        float fy = (float)y / (MESH_NUM_Y_POINTS - 1);
+        for (int x = 0; x < MESH_NUM_X_POINTS; x++) {
+          float fx = (float)x / (MESH_NUM_X_POINTS - 1);
+          z_values[y][x] = (z_x0y0 * (1 - fx) + z_x1y0 * fx) * (1 - fy)
+                         + (z_x0y1 * (1 - fx) + z_x1y1 * fx) * fy;
+        }
+      }
+    }
+
     inline void zigzag(int index, int &ix, int &iy) {
       ix = index % (MESH_NUM_X_POINTS);
       iy = index / (MESH_NUM_X_POINTS);
