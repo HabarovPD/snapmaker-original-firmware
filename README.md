@@ -1,5 +1,10 @@
 # Snapmaker Original (v1) firmware: GCC build
 
+> [!WARNING]
+> **Use at your own risk.** This is unofficial firmware, not affiliated with or endorsed by Snapmaker. Flashing it, replacing the controller MCU or opening the electronics may void your warranty. You alone are responsible for any loss of warranty and for any damage to your printer, laser or CNC module, controller board, programmer or other equipment, as well as for any injury or property damage resulting from its use.
+>
+> Back up the whole flash (`make backup`) before writing anything, check the wiring and supply voltage, and never leave the machine unattended while it runs, especially with the laser. The software is provided "as is", without warranty of any kind; see sections 15 and 16 of the GPLv3.
+
 This repo has the source code of the official **Snapmaker Original firmware 2.11**,
 which is Marlin 1.1.0-RC6 heavily modified by Snapmaker. It is ported from IAR
 Embedded Workbench to **arm-none-eabi-gcc** and can be flashed with a cheap
