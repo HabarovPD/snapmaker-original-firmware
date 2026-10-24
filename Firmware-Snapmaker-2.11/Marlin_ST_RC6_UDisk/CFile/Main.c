@@ -63,7 +63,9 @@ void SystemDeinit(void)
 	TIM_DeInit(TIM5);
 	TIM_DeInit(TIM6);
 	TIM_DeInit(TIM7);
+	#ifdef STM32F10X_CL
 	USBH_DeInit(&USB_OTG_Core, &USB_Host);
+	#endif
 	USART_DeInit(USART1);
 	USART_DeInit(USART2);
 	USART_DeInit(USART3);

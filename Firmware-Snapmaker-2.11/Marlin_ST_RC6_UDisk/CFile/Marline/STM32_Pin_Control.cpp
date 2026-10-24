@@ -18,23 +18,18 @@ uint32_t Tick;
 #define FLASH_GRBL_PARA (FLASH_GRBL+GRBL_CODE_SIZE)
 
 
-inline uint32_t SaveSR(void)
+// IAR версия была на asm с "bx lr" (полагалась на соглашение о вызовах);
+// в GCC после инлайна это возвращало бы из вызывающей функции.
+static inline uint32_t SaveSR(void)
 {
-	__asm
-	(
-	"mrs r0, primask\n"
-	"CPSID I\n"
-	"bx lr"
-	);
+	uint32_t sr = __get_PRIMASK();
+	__disable_irq();
+	return sr;
 }
 
-inline void RestoreSR(uint32_t Sr)
+static inline void RestoreSR(uint32_t Sr)
 {
-	__asm
-	(
-	"msr primask, r0\n"
-	"bx lr"
-	);
+	__set_PRIMASK(Sr);
 }
 
 void EnterCritical(uint8_t option)

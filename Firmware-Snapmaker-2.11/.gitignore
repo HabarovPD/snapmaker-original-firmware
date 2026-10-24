@@ -81,3 +81,7 @@ Untitled Project.si4project/
 # End of https://www.gitignore.io/api/iarembeddedworkbench
 *.ewp
 *.ewp
+
+# GCC build (Marlin_ST_RC6_UDisk/Makefile)
+build/
+backup/

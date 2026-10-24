@@ -53,7 +53,7 @@ enum
 
 static void delay_us(unsigned short t)
 {
-	unsigned long i;
+	volatile unsigned long i;	// GCC выкидывает пустой цикл без volatile
 	while(t--)
 	{
 		for(i=0;i<220;i++);

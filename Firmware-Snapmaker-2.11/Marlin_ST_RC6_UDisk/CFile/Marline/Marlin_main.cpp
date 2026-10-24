@@ -261,7 +261,7 @@
 
 
 inline void gcode_M104();
-inline void gcode_M140();
+void gcode_M140();
 inline void gcode_G0_G1(uint16_t Number);
 inline void gcode_G28();
 
@@ -1485,7 +1485,7 @@ inline void sync_plan_position() {
 }
 inline void sync_plan_position_e() { plan_set_e_position(current_position[E_AXIS]); }
 inline void set_current_to_destination() { memcpy(current_position, destination, sizeof(current_position)); }
-inline void set_destination_to_current() { memcpy(destination, current_position, sizeof(destination)); }
+void set_destination_to_current() { memcpy(destination, current_position, sizeof(destination)); }
 
 static void setup_for_endstop_move() {
     saved_feedrate = feedrate;
@@ -4995,7 +4995,7 @@ inline void gcode_M129() { baricuda_e_to_p_pressure = 0; }
 /**
  * M140: Set bed temperature
  */
-inline void gcode_M140() {
+void gcode_M140() {
     if (DEBUGGING(DRYRUN)) return;
     if (code_seen('S')) setTargetBed(code_value());
 }
@@ -5516,7 +5516,7 @@ inline void gcode_M205() {
 /**
  * M206: Set Additional Homing Offset (X Y Z). SCARA aliases T=X, P=Y
  */
-inline void gcode_M206() {
+void gcode_M206() {
     for (int8_t i = X_AXIS; i <= Z_AXIS; i++)
         if (code_seen(axis_codes[i]))
             set_home_offset((AxisEnum)i, code_value());

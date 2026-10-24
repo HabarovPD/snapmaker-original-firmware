@@ -399,7 +399,7 @@ void UDisk::StartSelectPrint(char *FileName)
 	*/
 	
 	openFile(FileName, true);
-	if(file.fs >= 0)
+	if(true) // IAR: "file.fs >= 0" - always true for a pointer
 	{
 		startFileprint();
 		print_job_timer.start();
@@ -483,7 +483,7 @@ bool UDisk::FileSeek(int seekpos)
 ****************************************/
 int32_t UDisk::GetFileSize()
 {
-	if(file.fs > 0)
+	if(file.fs != NULL)
 		return file.fsize;
 	else
 		return -1;

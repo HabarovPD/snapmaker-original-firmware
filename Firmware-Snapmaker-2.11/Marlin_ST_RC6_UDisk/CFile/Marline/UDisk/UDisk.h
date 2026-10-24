@@ -71,7 +71,7 @@ public:
   char chdir(const char *relpath);
   void updir();
 
-  inline bool isFileOpen() { return file.fs>0?true:false; }
+  inline bool isFileOpen() { return file.fs!=NULL; }
   inline bool eof() { return Udiskpos >= filesize; }
   char get(char *pBuff);
   inline void setIndex(long index) { Udiskpos = index; f_lseek(&file, index); }

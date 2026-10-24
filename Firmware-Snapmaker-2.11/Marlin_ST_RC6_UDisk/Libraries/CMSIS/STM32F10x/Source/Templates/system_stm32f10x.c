@@ -1077,10 +1077,12 @@ static void SetSysClockTo72(void)
 	RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_ADCPRE_DIV4 | (3<<14) | RCC_CFGR_PLLMULL9);
 	#endif
 #else    
-    /*  PLL configuration: PLLCLK = HSE * 9 = 72 MHz */
+    /*  PLL configuration: PLLCLK = HSE(16 MHz) / 2 * 9 = 72 MHz */
     RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE |
-                                        RCC_CFGR_PLLMULL));
-    RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMULL9 | RCC_CFGR_PLLXTPRE);
+                                        RCC_CFGR_PLLMULL | RCC_CFGR_ADCPRE));
+    /* ADC = PCLK2 / 8 = 9 MHz, как в ветке CL (максимум 14 MHz) */
+    RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLMULL9 | RCC_CFGR_PLLXTPRE |
+                            RCC_CFGR_ADCPRE_DIV8);
 #endif /* STM32F10X_CL */
 
     /* Enable PLL */
