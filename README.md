@@ -53,6 +53,12 @@ printer from its own supply. See
 [`Firmware-Snapmaker-2.11/Marlin_ST_RC6_UDisk/BUILD.md`](Firmware-Snapmaker-2.11/Marlin_ST_RC6_UDisk/BUILD.md)
 for the flash map, every make target and recovery options.
 
+## Tool head pinout
+
+All modules share one 8-pin connector; the firmware detects the module by the
+resistance on the thermistor pins. See [`TOOLHEAD_PINOUT.md`](TOOLHEAD_PINOUT.md)
+([на русском](TOOLHEAD_PINOUT.ru.md)).
+
 ## What was changed for GCC
 
 - All application code and the ST USB stack are compiled as C++, as IAR did,
@@ -73,6 +79,7 @@ for the flash map, every make target and recovery options.
 | `bins/Firmware GD32Base-2.11 bin/` | Official 2.11 `Update.Bin` with changelog and upgrade instructions |
 | `bins/klipper bins/` | Prebuilt Klipper images for this board (`b<bootloader KiB>_c<crystal MHz>`) |
 | `assets-20210120/` | CAM post-processors and tool libraries (ArtCAM, Aspire, FreeCAD, Fusion 360, VCarve) |
+| `TOOLHEAD_PINOUT.md` / [`.ru.md`](TOOLHEAD_PINOUT.ru.md) | 8-pin tool head connector pinout for the 3D printing, laser and CNC modules, and how the firmware detects them |
 | `SMLaser.pdf` | Schematic of a 350 mW laser module for Snapmaker v1 (RJ45 pinout, XL3005 driver) |
 
 ## License
